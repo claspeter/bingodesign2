@@ -1,0 +1,19 @@
+{
+  "name": "bingodesign2",
+  "version": "1.0.0",
+  "description": "Themis Bingo — Animated Design System",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.3",
+    "gsap": "^3.12.5",
+    "lottie-web": "^5.12.2"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

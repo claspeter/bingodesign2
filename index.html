@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Themis Bingo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="stars"></div>
+
+  <div class="app">
+    <h1 class="title">
+      <span class="b">B</span><span class="i">I</span><span class="n">N</span><span class="g">G</span><span class="o">O</span>
+    </h1>
+
+    <div class="draw-area">
+      <div id="current-ball" class="current-ball">
+        <div class="ball-letter">?</div>
+        <div class="ball-number">--</div>
+      </div>
+      <button id="draw-btn" class="draw-btn">Draw Number</button>
+      <div id="called-numbers" class="called-numbers"></div>
+    </div>
+
+    <div id="card-container"></div>
+    <button id="new-card-btn" class="new-card-btn">New Card</button>
+  </div>
+
+  <div id="win-overlay" class="win-overlay">
+    <div class="win-text">BINGO!</div>
+    <button id="play-again-btn" class="play-again-btn">Play Again</button>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
