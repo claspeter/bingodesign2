@@ -3,36 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Themis Bingo</title>
+  <title>Themis Bingo — 3D Draw Machine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="stars"></div>
-
-  <div class="app">
-    <h1 class="title">
-      <span class="b">B</span><span class="i">I</span><span class="n">N</span><span class="g">G</span><span class="o">O</span>
-    </h1>
-
-    <div class="draw-area">
-      <div id="current-ball" class="current-ball">
-        <div class="ball-letter">?</div>
-        <div class="ball-number">--</div>
+  <div id="app">
+    <div id="canvas-wrap"></div>
+    <div id="ui-panel">
+      <div id="header">
+        <h1 class="logo">BINGO</h1>
+        <p class="subtitle">90-Ball Draw Machine</p>
       </div>
-      <button id="draw-btn" class="draw-btn">Draw Number</button>
-      <div id="called-numbers" class="called-numbers"></div>
+      <div id="current-ball-wrap">
+        <div id="current-ball-inner"><span id="current-num">–</span></div>
+        <div id="current-meta"><span id="current-label">Waiting...</span></div>
+      </div>
+      <div id="controls">
+        <button id="draw-btn" class="btn-primary">Draw Ball</button>
+        <div id="auto-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="auto-toggle" />
+            <span class="toggle-track"></span>Auto
+          </label>
+          <div id="speed-wrap">
+            <input type="range" id="speed-slider" min="2" max="15" value="5" step="1" />
+            <span id="speed-label">5s</span>
+          </div>
+        </div>
+        <div id="progress-row">
+          <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+          <span id="count-label"><span id="count">0</span> / 90</span>
+        </div>
+        <button id="reset-btn" class="btn-secondary">Reset</button>
+      </div>
+      <div id="board-wrap">
+        <div id="board-header">
+          <span>1–9</span><span>10–19</span><span>20–29</span>
+          <span>30–39</span><span>40–49</span><span>50–59</span>
+          <span>60–69</span><span>70–79</span><span>80–90</span>
+        </div>
+        <div id="bingo-board"></div>
+      </div>
     </div>
-
-    <div id="card-container"></div>
-    <button id="new-card-btn" class="new-card-btn">New Card</button>
   </div>
-
-  <div id="win-overlay" class="win-overlay">
-    <div class="win-text">BINGO!</div>
-    <button id="play-again-btn" class="play-again-btn">Play Again</button>
-  </div>
-
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
