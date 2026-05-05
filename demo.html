@@ -1,20 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Themis Bingo — 3D Draw Machine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/examples/jsm/postprocessing/EffectComposer.js": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/postprocessing/EffectComposer.js",
+      "three/examples/jsm/postprocessing/RenderPass.js": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/postprocessing/RenderPass.js",
+      "three/examples/jsm/postprocessing/UnrealBloomPass.js": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/postprocessing/UnrealBloomPass.js",
+      "gsap": "https://esm.sh/gsap@3.12.5"
+    }
+  }
+  </script>
+
+  <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #060612;
+  --surface: #0d0d22;
+  --surface2: #13132a;
+  --border: rgba(100,120,200,0.18);
+  --text: #e8eaf6;
+  --text-dim: #6068a0;
+  --accent: #4361ee;
+  --accent-glow: rgba(67,97,238,0.35);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); }
+
+#app {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ─── Canvas ──────────────────────────────────────────────────────────────── */
+#canvas-wrap {
+  flex: 0 0 62%;
+  position: relative;
+  overflow: hidden;
+}
+#canvas-wrap canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ─── UI Panel ────────────────────────────────────────────────────────────── */
+#ui-panel {
+  flex: 0 0 38%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 14px 14px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+#ui-panel::-webkit-scrollbar { width: 4px; }
+#ui-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
+#header { text-align: center; flex-shrink: 0; }
+.logo {
+  font-size: clamp(18px, 2.8vw, 30px);
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  background: linear-gradient(135deg, #4361ee 0%, #7b2fff 50%, #f72585 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* ─── Current Ball ────────────────────────────────────────────────────────── */
+#current-ball-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+#current-ball-inner {
+  width: clamp(64px, 9vw, 90px);
+  height: clamp(64px, 9vw, 90px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--ball-light, #6680ff), var(--ball-color, #4361ee));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px var(--ball-glow, rgba(67,97,238,0.55)), 0 0 8px rgba(0,0,0,0.6);
+  transition: background 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+#current-ball-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  clip-path: ellipse(40% 30% at 35% 30%);
+}
+#current-ball-inner::after {
+  content: '';
+  position: absolute;
+  width: 55%;
+  height: 38%;
+  background: rgba(255,255,255,0.88);
+  border-radius: 50%;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  z-index: 0;
+}
+#current-num {
+  font-size: clamp(20px, 3vw, 36px);
+  font-weight: 900;
+  color: #111;
+  text-shadow: none;
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+}
+#current-meta { text-align: center; }
+#current-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* ─── Controls ────────────────────────────────────────────────────────────── */
+#controls {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #4361ee, #7b2fff);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(67,97,238,0.4);
+  font-family: inherit;
+}
+.btn-primary:hover:not(:disabled) { box-shadow: 0 6px 24px rgba(67,97,238,0.6); }
+.btn-primary:active:not(:disabled) { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-secondary {
+  width: 100%;
+  padding: 7px 16px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: inherit;
+}
+.btn-secondary:hover { color: var(--text); border-color: rgba(100,120,200,0.4); }
+
+#auto-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  user-select: none;
+}
+.toggle-label input { display: none; }
+.toggle-track {
+  width: 32px; height: 17px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.2s, background 0.2s;
+}
+.toggle-label input:checked ~ .toggle-track { background: var(--accent); border-color: var(--accent); }
+.toggle-label input:checked ~ .toggle-track::after { transform: translateX(15px); background: #fff; }
+
+#speed-wrap { display: flex; align-items: center; gap: 6px; flex: 1; }
+#speed-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--surface2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+#speed-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 6px var(--accent-glow);
+}
+#speed-label { font-size: 10px; color: var(--text-dim); min-width: 20px; text-align: right; }
+
+#progress-row { display: flex; align-items: center; gap: 8px; }
+#progress-bar-wrap {
+  flex: 1; height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+#progress-bar {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #4361ee, #f72585);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+#count-label { font-size: 10px; font-weight: 700; color: var(--text-dim); min-width: 42px; text-align: right; }
+#count { color: var(--text); }
+
+/* ─── Board ───────────────────────────────────────────────────────────────── */
+#board-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 0;
+}
+#board-header {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 2px;
+  flex-shrink: 0;
+}
+#board-header span {
+  font-size: 7px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-dim);
+  letter-spacing: -0.02em;
+}
+#bingo-board {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  min-height: 0;
+}
+.decade-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ball-cell {
+  flex: 1;
+  min-height: 16px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(7px, 0.95vw, 10px);
+  font-weight: 700;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.22);
+  border: 1px solid rgba(255,255,255,0.05);
+  cursor: default;
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s, border-color 0.25s;
+  user-select: none;
+}
+.ball-cell.called {
+  background: var(--bc);
+  color: #fff;
+  border-color: var(--bc);
+  box-shadow: 0 0 7px var(--bc);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.ball-cell.latest {
+  box-shadow: 0 0 14px var(--bc), 0 0 4px rgba(255,255,255,0.5);
+  animation: pulse-cell 1s ease-out forwards;
+}
+@keyframes pulse-cell {
+  0%   { transform: scale(1.35); }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* ─── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  #app { flex-direction: column; }
+  #canvas-wrap { flex: 0 0 44vh; }
+  #ui-panel {
+    flex: 1;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding: 10px;
+    gap: 7px;
+  }
+  .logo { font-size: 20px; }
+  #current-ball-inner { width: 52px; height: 52px; }
+  #current-num { font-size: 19px; }
+}
+@media (max-width: 400px) {
+  #canvas-wrap { flex: 0 0 36vh; }
+  #board-header span { font-size: 5px; }
+  .ball-cell { font-size: 7px; }
+}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="canvas-wrap"></div>
+    <div id="ui-panel">
+      <div id="header">
+        <h1 class="logo">BINGO</h1>
+        <p class="subtitle">90-Ball Draw Machine</p>
+      </div>
+      <div id="current-ball-wrap">
+        <div id="current-ball-inner">
+          <span id="current-num">–</span>
+        </div>
+        <div id="current-meta">
+          <span id="current-label">Waiting...</span>
+        </div>
+      </div>
+      <div id="controls">
+        <button id="draw-btn" class="btn-primary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2zm0 4a1 1 0 0 0-1 1v4.586L8.707 9.293a1 1 0 0 0-1.414 1.414l4 4a1 1 0 0 0 1.414 0l4-4a1 1 0 0 0-1.414-1.414L13 11.586V7a1 1 0 0 0-1-1z"/>
+          </svg>
+          Draw Ball
+        </button>
+        <div id="auto-row">
+          <label class="toggle-label">
+            <input type="checkbox" id="auto-toggle" />
+            <span class="toggle-track"></span>
+            Auto
+          </label>
+          <div id="speed-wrap">
+            <input type="range" id="speed-slider" min="2" max="15" value="5" step="1" />
+            <span id="speed-label">5s</span>
+          </div>
+        </div>
+        <div id="progress-row">
+          <div id="progress-bar-wrap">
+            <div id="progress-bar"></div>
+          </div>
+          <span id="count-label"><span id="count">0</span> / 90</span>
+        </div>
+        <button id="reset-btn" class="btn-secondary">Reset</button>
+      </div>
+      <div id="board-wrap">
+        <div id="board-header">
+          <span>1–9</span><span>10–19</span><span>20–29</span>
+          <span>30–39</span><span>40–49</span><span>50–59</span>
+          <span>60–69</span><span>70–79</span><span>80–90</span>
+        </div>
+        <div id="bingo-board"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { gsap } from 'gsap';
-import './style.css';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const DC = new THREE.Vector3(0, 0.8, 0); // drum center world pos
-const DR = 1.8;                           // drum radius
-const DI = 1.45;                          // drum inner (ball travel boundary)
+const DC = new THREE.Vector3(0, 0.8, 0);
+const DR = 1.8;
+const DI = 1.45;
 const BALL_R = 0.17;
 const TRAVEL_R = 0.26;
 const RACK_R = 0.11;
-const TILT = 0.3;                         // drum Z tilt (rad)
-const RACK_N = 10;                        // balls per rack row
-const RACK_SP = 0.29;                     // rack spacing
+const TILT = 0.3;
+const RACK_N = 10;
+const RACK_SP = 0.29;
 
 const BALL_COLORS = [
   0xe63946, 0xf4722b, 0xf9c74f, 0x43aa8b,
@@ -22,10 +434,8 @@ const BALL_COLORS = [
 ];
 const cIdx = n => Math.min(8, Math.floor((n - 1) / 10));
 
-// stage = where current ball sits after exiting drum
 const STAGE = new THREE.Vector3(0, -1.95, 1.6);
 
-// drum exit in world space (bottom of tilted drum)
 const EXIT = new THREE.Vector3(
   DC.x + Math.sin(TILT) * DR,
   DC.y - Math.cos(TILT) * DR - 0.08,
@@ -48,9 +458,10 @@ wrap.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x020a16, 0.022);
 
-// Load studio background with canvas-based enhancement
+// Load studio background with canvas-based enhancement (contrast+saturation+brightness)
 (function loadStudioBg() {
   const img = new Image();
+  img.crossOrigin = 'anonymous';
   img.onload = () => {
     const c = document.createElement('canvas');
     c.width = img.naturalWidth; c.height = img.naturalHeight;
@@ -61,7 +472,7 @@ scene.fog = new THREE.FogExp2(0x020a16, 0.022);
     tex.colorSpace = THREE.SRGBColorSpace;
     scene.background = tex;
   };
-  img.src = new URL('./studio-bg.jpg', import.meta.url).href;
+  img.src = './studio-bg.jpg';
 })();
 
 const camera = new THREE.PerspectiveCamera(58, W() / H(), 0.1, 80);
@@ -74,7 +485,7 @@ composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(W(), H()), 0.75, 0.4, 0.62);
 composer.addPass(bloom);
 
-// ─── Lighting (three-point) ───────────────────────────────────────────────────
+// ─── Lighting ────────────────────────────────────────────────────────────────
 const key = new THREE.DirectionalLight(0xfff4e0, 2.8);
 key.position.set(5, 8, 6);
 key.castShadow = true;
@@ -94,16 +505,12 @@ scene.add(rim);
 
 scene.add(new THREE.AmbientLight(0x111133, 0.75));
 
-// Spotlight on current-ball stage
 const spot = new THREE.SpotLight(0xffffff, 2.5, 12, Math.PI / 7, 0.35, 1.5);
 spot.position.set(0, 2.5, 5);
 spot.target.position.copy(STAGE);
 scene.add(spot, spot.target);
 
 // ─── Drum ──────────────────────────────────────────────────────────────────────
-// drumTilt: positioned at DC, rotated TILT on Z (keeps tilt constant)
-// drumSpin: child, rotates on local Y (spins cage around tilted axis)
-// drumBalls InstancedMesh: sibling of drumSpin (balls don't spin with cage)
 const drumTilt = new THREE.Group();
 drumTilt.position.copy(DC);
 drumTilt.rotation.z = TILT;
@@ -112,10 +519,7 @@ scene.add(drumTilt);
 const drumSpin = new THREE.Group();
 drumTilt.add(drumSpin);
 
-// Shared metal material for rings
 const ringMat = new THREE.MeshStandardMaterial({ color: 0x8899bb, metalness: 0.9, roughness: 0.2 });
-
-// Equatorial + polar decorative rings
 const ringGeo = new THREE.TorusGeometry(DR, 0.042, 8, 64);
 const eq = new THREE.Mesh(ringGeo, ringMat);
 eq.rotation.x = Math.PI / 2;
@@ -125,7 +529,6 @@ const pol = new THREE.Mesh(ringGeo, ringMat);
 pol.rotation.y = Math.PI / 2;
 drumSpin.add(pol);
 
-// Axle caps at poles
 const capGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 16);
 const capMat = new THREE.MeshStandardMaterial({ color: 0xaabbcc, metalness: 0.95, roughness: 0.15 });
 [-1, 1].forEach(s => {
@@ -134,7 +537,6 @@ const capMat = new THREE.MeshStandardMaterial({ color: 0xaabbcc, metalness: 0.95
   drumSpin.add(cap);
 });
 
-// Cage wireframe (IcosahedronGeometry subdivided)
 const cageGeo = new THREE.IcosahedronGeometry(DR, 2);
 const cage = new THREE.LineSegments(
   new THREE.EdgesGeometry(cageGeo),
@@ -142,7 +544,6 @@ const cage = new THREE.LineSegments(
 );
 drumSpin.add(cage);
 
-// Glass sphere (MeshPhysicalMaterial transmission)
 const glass = new THREE.Mesh(
   new THREE.SphereGeometry(DR, 32, 32),
   new THREE.MeshPhysicalMaterial({
@@ -159,7 +560,6 @@ const glass = new THREE.Mesh(
 );
 drumSpin.add(glass);
 
-// Drum shaft (tilted, connects to pedestal)
 const shaft = new THREE.Mesh(
   new THREE.CylinderGeometry(0.09, 0.09, 0.55, 12),
   new THREE.MeshStandardMaterial({ color: 0x778899, metalness: 0.9, roughness: 0.2 })
@@ -167,7 +567,7 @@ const shaft = new THREE.Mesh(
 shaft.position.y = -DR - 0.28;
 drumTilt.add(shaft);
 
-// ─── Balls — InstancedMesh (in drumTilt local space, balls won't spin) ─────────
+// ─── Balls ─────────────────────────────────────────────────────────────────────
 const ballGeo = new THREE.SphereGeometry(BALL_R, 14, 14);
 const ballMat = new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.12 });
 const iBalls = new THREE.InstancedMesh(ballGeo, ballMat, 90);
@@ -183,7 +583,6 @@ iBalls.instanceColor.needsUpdate = true;
 
 const ZERO_MTX = new THREE.Matrix4().makeScale(0, 0, 0);
 
-// GSAP-animated ball positions (local to drumTilt)
 function randSphere(r) {
   let v;
   do { v = new THREE.Vector3((Math.random() - .5) * 2, (Math.random() - .5) * 2, (Math.random() - .5) * 2); }
@@ -210,29 +609,25 @@ bData.forEach((_, i) => setTimeout(() => tumble(i), Math.random() * 2800));
 
 // ─── Pedestal ─────────────────────────────────────────────────────────────────
 const metalMat = new THREE.MeshStandardMaterial({ color: 0x778899, metalness: 0.88, roughness: 0.22 });
-const PT = DC.y - DR - 0.48; // pedestal top Y (world)
-const PB = PT - 1.85;        // pedestal base Y (world)
+const PT = DC.y - DR - 0.48;
+const PB = PT - 1.85;
 
-// Top collar (mount under drum)
 const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.18, 0.2, 16), metalMat);
 collar.position.set(0, PT, 0);
 collar.castShadow = true;
 scene.add(collar);
 
-// Main pole
 const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 1.7, 12), metalMat);
 pole.position.set(0, PT - 0.85, 0);
 pole.castShadow = true;
 scene.add(pole);
 
-// Base plate
 const base = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 1.0, 0.1, 24), metalMat);
 base.position.set(0, PB, 0);
 base.castShadow = true;
 base.receiveShadow = true;
 scene.add(base);
 
-// Three small feet
 for (let i = 0; i < 3; i++) {
   const ang = (i / 3) * Math.PI * 2;
   const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.07, 0.055, 8), metalMat);
@@ -240,7 +635,6 @@ for (let i = 0; i < 3; i++) {
   scene.add(foot);
 }
 
-// Floor (receives shadows)
 const floor = new THREE.Mesh(
   new THREE.CircleGeometry(9, 40),
   new THREE.MeshStandardMaterial({ color: 0x070714, roughness: 0.95, metalness: 0.04 })
@@ -259,7 +653,6 @@ const trackCurve = new THREE.CatmullRomCurve3([
   STAGE.clone(),
 ]);
 
-// Translucent glass tube
 scene.add(new THREE.Mesh(
   new THREE.TubeGeometry(trackCurve, 36, 0.095, 8, false),
   new THREE.MeshStandardMaterial({
@@ -268,7 +661,6 @@ scene.add(new THREE.Mesh(
   })
 ));
 
-// Chute exit ring
 const exitRing = new THREE.Mesh(
   new THREE.TorusGeometry(0.115, 0.022, 6, 24),
   new THREE.MeshStandardMaterial({ color: 0xaabbcc, metalness: 0.9, roughness: 0.2 })
@@ -276,7 +668,7 @@ const exitRing = new THREE.Mesh(
 exitRing.position.copy(EXIT);
 scene.add(exitRing);
 
-// ─── Rack frame ────────────────────────────────────────────────────────────────
+// ─── Rack ─────────────────────────────────────────────────────────────────────
 const RACK_Y0 = PB - 0.28;
 const RACK_X0 = -((RACK_N - 1) * RACK_SP) / 2;
 const rackBarMat = new THREE.MeshStandardMaterial({ color: 0x445566, metalness: 0.8, roughness: 0.3 });
@@ -287,7 +679,6 @@ for (let row = 0; row < 9; row++) {
   bar.position.set(0, RACK_Y0 - row * RACK_SP - RACK_SP, -0.055);
   scene.add(bar);
 }
-// Side rails
 [-1, 1].forEach(s => {
   const rail = new THREE.Mesh(new THREE.BoxGeometry(0.025, 9 * RACK_SP + 0.1, 0.028), rackBarMat);
   rail.position.set(s * (rackBarW / 2 + 0.015), RACK_Y0 - 4.5 * RACK_SP, -0.055);
@@ -302,7 +693,7 @@ function getRackPos(idx) {
   );
 }
 
-// ─── Canvas textures for individual drawn balls ────────────────────────────────
+// ─── Canvas textures ──────────────────────────────────────────────────────────
 function makeTex(num) {
   const C = 256;
   const cv = document.createElement('canvas');
@@ -312,22 +703,18 @@ function makeTex(num) {
   const hex = BALL_COLORS[ci];
   const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
 
-  // Gradient background
   const gr = ctx.createRadialGradient(90, 86, 10, 128, 128, 110);
   gr.addColorStop(0, `rgb(${Math.min(r+85,255)},${Math.min(g+85,255)},${Math.min(b+85,255)})`);
   gr.addColorStop(1, `rgb(${r},${g},${b})`);
   ctx.fillStyle = gr;
   ctx.beginPath(); ctx.arc(128, 128, 112, 0, Math.PI * 2); ctx.fill();
 
-  // Specular highlight
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.beginPath(); ctx.ellipse(100, 95, 35, 22, -0.4, 0, Math.PI * 2); ctx.fill();
 
-  // White number stripe
   ctx.fillStyle = 'rgba(255,255,255,0.92)';
   ctx.beginPath(); ctx.ellipse(128, 128, 50, 36, 0, 0, Math.PI * 2); ctx.fill();
 
-  // Number text
   ctx.fillStyle = '#111';
   ctx.font = `bold ${num >= 10 ? 48 : 56}px Arial`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -408,12 +795,10 @@ function draw() {
   const num = available.splice(ri, 1)[0];
   const idx = num - 1;
 
-  // Stop this ball tumbling and hide from InstancedMesh
   bData[idx].active = false;
   gsap.killTweensOf(bData[idx].pos);
   drawn.add(idx);
 
-  // Individual ball mesh with texture
   const ci = cIdx(num);
   const mesh = new THREE.Mesh(
     new THREE.SphereGeometry(TRAVEL_R, 22, 22),
@@ -429,7 +814,6 @@ function draw() {
   scene.add(mesh);
   drawnMeshes.push(mesh);
 
-  // Move previous current ball to its rack slot
   if (currentMesh) {
     const prev = currentMesh;
     const rackPos = getRackPos(drawCount - 1);
@@ -443,7 +827,6 @@ function draw() {
     currentMesh = null;
   }
 
-  // Animate new ball along track curve
   const prog = { t: 0 };
   gsap.to(prog, {
     t: 1, duration: 1.9, ease: 'power2.inOut',
@@ -534,7 +917,7 @@ document.getElementById('auto-toggle').addEventListener('change', e => {
 
 document.getElementById('speed-slider').addEventListener('input', e => {
   autoInterval = +e.target.value * 1000;
-  document.getElementById('speed-label').textContent = `${e.target.value}s`;
+  document.getElementById('speed-label').textContent = e.target.value + 's';
   if (autoTimer) { stopAuto(); startAuto(); }
 });
 
@@ -557,13 +940,9 @@ function animate() {
   const dt = clock.getDelta();
   const t = clock.getElapsedTime();
 
-  // Drum cage spin (around tilted local Y axis)
   drumSpin.rotation.y += dt * 0.44;
-
-  // Very subtle drum bob
   drumTilt.position.y = DC.y + Math.sin(t * 0.55) * 0.013;
 
-  // Update InstancedMesh ball positions
   for (let i = 0; i < 90; i++) {
     if (drawn.has(i)) {
       iBalls.setMatrixAt(i, ZERO_MTX);
@@ -577,11 +956,9 @@ function animate() {
   }
   iBalls.instanceMatrix.needsUpdate = true;
 
-  // Subtle camera sway
   camera.position.x = Math.sin(t * 0.1) * 0.12;
   camera.position.y = 0.5 + Math.sin(t * 0.08) * 0.07;
 
-  // Current ball pulse glow
   if (currentMesh) {
     currentMesh.material.emissiveIntensity = 0.45 + Math.sin(t * 2.8) * 0.12;
   }
@@ -590,3 +967,6 @@ function animate() {
 }
 
 animate();
+  </script>
+</body>
+</html>
