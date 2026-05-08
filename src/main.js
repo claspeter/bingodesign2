@@ -1,7 +1,7 @@
 import { gsap } from 'gsap'
+import { io } from 'socket.io-client'
 import { BingoCard } from './components/BingoCard.js'
 import { NumberDraw } from './components/NumberDraw.js'
-import { drawNumber } from './utils/bingoLogic.js'
 import { playWinSequence, hideWinOverlay } from './animations/winSequence.js'
 import './style.css'
 
@@ -17,6 +17,49 @@ let bingoCard = new BingoCard(cardContainer)
 let numberDraw = new NumberDraw(ballEl, calledEl)
 let gameOver = false
 
+const socket = io()
+
+// Sync state for late-joiners
+socket.on('state', ({ called, gameOver: over }) => {
+  called.forEach((n) => numberDraw.called.add(n))
+  if (called.length) numberDraw.display(called[called.length - 1])
+  if (over) {
+    gameOver = true
+    winOverlay.classList.add('active')
+    playWinSequence(winOverlay)
+  }
+})
+
+socket.on('number-drawn', ({ number }) => {
+  numberDraw.display(number)
+  const result = bingoCard.markNumber(number)
+  if (result === 'BINGO') {
+    gameOver = true
+    socket.emit('bingo')
+    setTimeout(() => {
+      winOverlay.classList.add('active')
+      playWinSequence(winOverlay)
+    }, 600)
+  }
+})
+
+socket.on('game-over', () => {
+  gameOver = true
+  setTimeout(() => {
+    winOverlay.classList.add('active')
+    playWinSequence(winOverlay)
+  }, 600)
+})
+
+socket.on('game-reset', () => {
+  hideWinOverlay(winOverlay)
+  setTimeout(() => {
+    gameOver = false
+    bingoCard.reset()
+    numberDraw.reset()
+  }, 350)
+})
+
 // Title entrance
 gsap.from('.title span', {
   y: -80,
@@ -29,20 +72,7 @@ gsap.from('.title span', {
 
 drawBtn.addEventListener('click', () => {
   if (gameOver) return
-
-  const number = drawNumber(numberDraw.called)
-  if (!number) return
-
-  numberDraw.display(number)
-
-  const result = bingoCard.markNumber(number)
-  if (result === 'BINGO') {
-    gameOver = true
-    setTimeout(() => {
-      winOverlay.classList.add('active')
-      playWinSequence(winOverlay)
-    }, 600)
-  }
+  socket.emit('draw')
 })
 
 newCardBtn.addEventListener('click', () => {
@@ -51,10 +81,5 @@ newCardBtn.addEventListener('click', () => {
 })
 
 playAgainBtn.addEventListener('click', () => {
-  hideWinOverlay(winOverlay)
-  setTimeout(() => {
-    gameOver = false
-    bingoCard.reset()
-    numberDraw.reset()
-  }, 350)
+  socket.emit('reset')
 })
