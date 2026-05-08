@@ -14,6 +14,8 @@ import agentRoutes       from './routes/agents.js'
 import payoutRoutes      from './routes/payouts.js'
 import agentAuthRoutes   from './routes/agentAuth.js'
 import agentPortalRoutes from './routes/agentPortal.js'
+import userAuthRoutes    from './routes/userAuth.js'
+import userPortalRoutes  from './routes/userPortal.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -26,6 +28,7 @@ app.use(express.json())
 // ── Serve static panels ───────────────────────────────────────────────────
 app.use('/admin',        express.static(join(__dirname, '../admin')))
 app.use('/agent-portal', express.static(join(__dirname, '../agent-portal')))
+app.use('/user-portal',  express.static(join(__dirname, '../user-portal')))
 
 // ── API routes ────────────────────────────────────────────────────────────
 app.use('/api/auth',         authRoutes)
@@ -37,6 +40,8 @@ app.use('/api/agents',       agentRoutes)
 app.use('/api/payouts',      payoutRoutes)
 app.use('/api/agent-auth',   agentAuthRoutes)
 app.use('/api/agent-portal', agentPortalRoutes)
+app.use('/api/user-auth',    userAuthRoutes)
+app.use('/api/user-portal',  userPortalRoutes)
 
 // ── Live draw (Socket.io) ─────────────────────────────────────────────────
 const DRAW_INTERVAL_MS = 7000
@@ -94,6 +99,7 @@ initDb().then(() => {
     console.log(`Bingo server  → http://localhost:${PORT}`)
     console.log(`Admin panel   → http://localhost:${PORT}/admin`)
     console.log(`Agent portal  → http://localhost:${PORT}/agent-portal`)
+    console.log(`User portal   → http://localhost:${PORT}/user-portal`)
   })
 }).catch(err => {
   console.error('DB init failed:', err)

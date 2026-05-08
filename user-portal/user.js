@@ -1,0 +1,260 @@
+const API   = ''
+let TOKEN   = localStorage.getItem('userToken') || null
+let profile = null
+
+/* ── Helpers ── */
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {}),
+    },
+    ...opts,
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || 'Request failed')
+  return data
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+}
+
+function showErr(el, msg)  { el.textContent = msg; el.classList.remove('hidden') }
+function hideErr(el)       { el.classList.add('hidden') }
+
+function fmtDate(str) {
+  if (!str) return '–'
+  return new Date(str).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' })
+}
+function fmtDateTime(str) {
+  if (!str) return '–'
+  return new Date(str).toLocaleString()
+}
+
+function esc(s) {
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+/* ── Auth tab switcher ── */
+document.querySelectorAll('.auth-tab').forEach(btn => {
+  btn.addEventListener('click', () => switchAuthTab(btn.dataset.target))
+})
+document.getElementById('goRegister').addEventListener('click', e => {
+  e.preventDefault(); switchAuthTab('formRegister')
+})
+document.getElementById('goLogin').addEventListener('click', e => {
+  e.preventDefault(); switchAuthTab('formLogin')
+})
+
+function switchAuthTab(targetId) {
+  document.querySelectorAll('.auth-tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.target === targetId))
+  document.querySelectorAll('.auth-form').forEach(f =>
+    f.classList.toggle('active', f.id === targetId))
+}
+
+/* ── Login ── */
+document.getElementById('formLogin').addEventListener('submit', async e => {
+  e.preventDefault()
+  const btn = e.target.querySelector('button[type=submit]')
+  const err = document.getElementById('loginErr')
+  hideErr(err); btn.disabled = true; btn.textContent = 'Signing in…'
+
+  try {
+    const data = await apiFetch('/api/user-auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email:    document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value,
+      }),
+    })
+    TOKEN = data.token
+    localStorage.setItem('userToken', TOKEN)
+    await loadDashboard()
+  } catch (err2) {
+    showErr(err, err2.message)
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In'
+  }
+})
+
+/* ── Register ── */
+document.getElementById('formRegister').addEventListener('submit', async e => {
+  e.preventDefault()
+  const btn = e.target.querySelector('button[type=submit]')
+  const err = document.getElementById('registerErr')
+  hideErr(err); btn.disabled = true; btn.textContent = 'Creating account…'
+
+  const password = document.getElementById('regPassword').value
+  if (password.length < 6) {
+    showErr(err, 'Password must be at least 6 characters')
+    btn.disabled = false; btn.textContent = 'Create Account'
+    return
+  }
+
+  try {
+    const data = await apiFetch('/api/user-auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        name:     document.getElementById('regName').value.trim(),
+        email:    document.getElementById('regEmail').value.trim(),
+        phone:    document.getElementById('regPhone').value.trim() || null,
+        password,
+      }),
+    })
+    TOKEN = data.token
+    localStorage.setItem('userToken', TOKEN)
+    await loadDashboard()
+  } catch (err2) {
+    showErr(err, err2.message)
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Account'
+  }
+})
+
+/* ── Logout ── */
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  TOKEN = null; profile = null
+  localStorage.removeItem('userToken')
+  showScreen('loginScreen')
+})
+
+/* ── Tab nav ── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
+    btn.classList.add('active')
+    document.getElementById('tab-' + btn.dataset.tab)?.classList.add('active')
+    if (btn.dataset.tab === 'tickets')      loadTickets()
+    if (btn.dataset.tab === 'transactions') loadTransactions()
+  })
+})
+
+/* ── Load dashboard ── */
+async function loadDashboard() {
+  profile = await apiFetch('/api/user-portal/me')
+  renderTopbar()
+  renderOverview()
+  showScreen('dashboard')
+}
+
+function renderTopbar() {
+  document.getElementById('topName').textContent    = profile.name
+  document.getElementById('topPoints').textContent  = Number(profile.points ?? 0).toLocaleString()
+
+  const badge = document.getElementById('regTypeBadge')
+  const isAgent = !!profile.agent_name
+  badge.textContent  = isAgent ? 'Agent User' : 'Member'
+  badge.className    = `reg-badge ${isAgent ? 'rb-agent' : 'rb-self'}`
+}
+
+function renderOverview() {
+  document.getElementById('ovPoints').textContent = Number(profile.points ?? 0).toLocaleString()
+  document.getElementById('prName').textContent   = profile.name
+  document.getElementById('prEmail').textContent  = profile.email || '–'
+  document.getElementById('prPhone').textContent  = profile.phone || '–'
+  document.getElementById('prSince').textContent  = fmtDate(profile.created_at)
+
+  const isAgent = !!profile.agent_name
+  document.getElementById('prType').textContent = isAgent ? 'Agent User' : 'Member (self-registered)'
+
+  const agentRow = document.getElementById('agentRow')
+  if (isAgent) {
+    agentRow.style.display = 'flex'
+    document.getElementById('prAgent').textContent = profile.agent_name
+  } else {
+    agentRow.style.display = 'none'
+  }
+}
+
+/* ── Tickets ── */
+document.getElementById('refreshTickets').addEventListener('click', loadTickets)
+
+async function loadTickets() {
+  const el = document.getElementById('ticketList')
+  el.innerHTML = '<div class="empty-state"><div class="ei">⏳</div><p>Loading…</p></div>'
+
+  try {
+    const tickets = await apiFetch('/api/user-portal/tickets')
+
+    // Update overview count while we're here
+    document.getElementById('ovTickets').textContent = tickets.length
+    const wins = tickets.filter(t => t.prize_amount > 0).length
+    document.getElementById('ovWins').textContent = wins
+
+    if (!tickets.length) {
+      el.innerHTML = '<div class="empty-state"><div class="ei">🎟️</div><p>No tickets yet</p></div>'
+      return
+    }
+
+    el.innerHTML = tickets.map(t => {
+      const nums = JSON.parse(t.numbers || '[]')
+      const balls = nums.map(n => `<div class="ball">${n}</div>`).join('')
+      const statusColor = t.status === 'active' ? 'var(--accent)' :
+                          t.prize_amount > 0 ? 'var(--success)' : 'var(--muted)'
+      return `
+        <div class="ticket-card">
+          <div class="ticket-header">
+            <span class="ticket-draw">${esc(t.draw_title)}</span>
+            <span class="ticket-date">${fmtDate(t.draw_date)} ${esc(t.draw_time ?? '')}</span>
+          </div>
+          <div class="ticket-numbers">${balls}</div>
+          <div class="ticket-footer">
+            <span style="color:${statusColor}">${esc(t.draw_status ?? t.status)}</span>
+            ${t.prize_amount > 0
+              ? `<span class="ticket-prize">🏆 Won ${Number(t.prize_amount).toLocaleString()} pts</span>`
+              : `<span>Paid: ${Number(t.purchase_price).toLocaleString()} pts</span>`}
+          </div>
+        </div>`
+    }).join('')
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state"><p>Error: ${esc(err.message)}</p></div>`
+  }
+}
+
+/* ── Transactions ── */
+document.getElementById('refreshTxns').addEventListener('click', loadTransactions)
+
+async function loadTransactions() {
+  const el = document.getElementById('txnList')
+  el.innerHTML = '<div class="empty-state"><div class="ei">⏳</div><p>Loading…</p></div>'
+
+  try {
+    const txns = await apiFetch('/api/user-portal/transactions')
+    if (!txns.length) {
+      el.innerHTML = '<div class="empty-state"><div class="ei">📋</div><p>No transactions yet</p></div>'
+      return
+    }
+    const ICONS = { deposit:'💵', withdraw:'💸', prize:'🏆', points_received:'📥', points_allocated:'📤', ticket_purchase:'🎟️' }
+    el.innerHTML = txns.map(t => {
+      const isPos = t.amount > 0
+      const icon  = ICONS[t.type] || (isPos ? '📥' : '📤')
+      return `
+        <div class="txn-row">
+          <div class="txn-icon">${icon}</div>
+          <div class="txn-info">
+            <div class="txn-desc">${esc(t.description || t.type)}</div>
+            <div class="txn-date">${fmtDateTime(t.created_at)}</div>
+          </div>
+          <div class="txn-amt ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : ''}${Number(t.amount).toLocaleString()} pts</div>
+        </div>`
+    }).join('')
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state"><p>Error: ${esc(err.message)}</p></div>`
+  }
+}
+
+/* ── Init ── */
+if (TOKEN) {
+  loadDashboard().catch(() => {
+    TOKEN = null
+    localStorage.removeItem('userToken')
+    showScreen('loginScreen')
+  })
+} else {
+  showScreen('loginScreen')
+}

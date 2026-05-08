@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Themis Bingo – My Account</title>
+  <link rel="stylesheet" href="user.css" />
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ════════════════════════════════════════════════════ -->
+<div id="loginScreen" class="screen active">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="logo-ball">🎱</span>
+      <h1>Themis Bingo</h1>
+    </div>
+
+    <!-- Tab switcher -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin"    data-target="formLogin">Sign In</button>
+      <button class="auth-tab"        id="tabRegister" data-target="formRegister">Create Account</button>
+    </div>
+
+    <!-- ── Login form ── -->
+    <form id="formLogin" class="auth-form active">
+      <div id="loginErr" class="alert alert-error hidden"></div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" required />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+      <p class="auth-hint">Don't have an account? <a href="#" id="goRegister">Create one →</a></p>
+    </form>
+
+    <!-- ── Register form ── -->
+    <form id="formRegister" class="auth-form">
+      <div class="register-type-notice">
+        <span class="register-icon">🆕</span>
+        <span>Creating a new account — you'll be able to log in right away.</span>
+      </div>
+      <div id="registerErr" class="alert alert-error hidden"></div>
+      <div class="field">
+        <label>Full Name *</label>
+        <input type="text" id="regName" placeholder="Your full name" autocomplete="name" required />
+      </div>
+      <div class="field">
+        <label>Email *</label>
+        <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" required />
+      </div>
+      <div class="field">
+        <label>Phone <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+        <input type="tel" id="regPhone" placeholder="+1 234 567 8900" autocomplete="tel" />
+      </div>
+      <div class="field">
+        <label>Password *</label>
+        <input type="password" id="regPassword" placeholder="Min 6 characters" autocomplete="new-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+      <p class="auth-hint">Already have an account? <a href="#" id="goLogin">Sign in →</a></p>
+    </form>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ════════════════════════════════════════════════════════ -->
+<div id="dashboard" class="screen">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo-ball-sm">🎱</span>
+      <span class="topbar-brand">Themis Bingo</span>
+      <span id="regTypeBadge" class="reg-badge"></span>
+    </div>
+    <div class="topbar-right">
+      <div class="points-pill">
+        <span>💎</span><span id="topPoints">0</span> pts
+      </div>
+      <span id="topName" class="top-name"></span>
+      <button class="btn btn-ghost btn-sm" id="logoutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="tickets">My Tickets</button>
+    <button class="tab-btn" data-tab="transactions">Transactions</button>
+  </nav>
+
+  <!-- ── OVERVIEW ── -->
+  <section class="tab-panel active" id="tab-overview">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon">💎</div>
+        <div class="stat-val" id="ovPoints">0</div>
+        <div class="stat-lbl">Points Balance</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎟️</div>
+        <div class="stat-val" id="ovTickets">0</div>
+        <div class="stat-lbl">Total Tickets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-val" id="ovWins">0</div>
+        <div class="stat-lbl">Wins</div>
+      </div>
+    </div>
+
+    <div class="profile-card">
+      <h3>My Profile</h3>
+      <div class="prow"><span>Name</span><span id="prName">–</span></div>
+      <div class="prow"><span>Email</span><span id="prEmail">–</span></div>
+      <div class="prow"><span>Phone</span><span id="prPhone">–</span></div>
+      <div class="prow"><span>Account type</span><span id="prType">–</span></div>
+      <div class="prow" id="agentRow" style="display:none">
+        <span>My Agent</span><span id="prAgent">–</span>
+      </div>
+      <div class="prow"><span>Member since</span><span id="prSince">–</span></div>
+    </div>
+  </section>
+
+  <!-- ── TICKETS ── -->
+  <section class="tab-panel" id="tab-tickets">
+    <div class="panel-header">
+      <h2>My Tickets</h2>
+      <button class="btn btn-secondary btn-sm" id="refreshTickets">↺ Refresh</button>
+    </div>
+    <div id="ticketList" class="card-list"></div>
+  </section>
+
+  <!-- ── TRANSACTIONS ── -->
+  <section class="tab-panel" id="tab-transactions">
+    <div class="panel-header">
+      <h2>Transactions</h2>
+      <button class="btn btn-secondary btn-sm" id="refreshTxns">↺ Refresh</button>
+    </div>
+    <div id="txnList" class="txn-list"></div>
+  </section>
+
+</div>
+
+<script src="user.js"></script>
+</body>
+</html>
