@@ -186,10 +186,102 @@ router.post('/allocate-points', requireAgentAuth, async (req, res) => {
 // ── GET /api/agent-portal/transactions ───────────────────────────────────
 router.get('/transactions', requireAgentAuth, (req, res) => {
   const txns = query(
-    "SELECT * FROM transactions WHERE user_id = ? AND type IN ('points_allocated','points_received') ORDER BY created_at DESC LIMIT 50",
+    `SELECT * FROM transactions WHERE user_id = ?
+     ORDER BY created_at DESC LIMIT 100`,
     [req.agent.user_id]
   )
   res.json(txns)
+})
+
+// ── POST /api/agent-portal/sell-points — sell points back to parent agent ─
+router.post('/sell-points', requireAgentAuth, (req, res) => {
+  const { agent_id, user_id: senderUserId } = req.agent
+  const { points } = req.body
+
+  if (!points || points <= 0) return res.status(400).json({ error: 'Points must be greater than 0' })
+
+  const sender = queryOne('SELECT points FROM users WHERE id = ?', [senderUserId])
+  if ((sender?.points ?? 0) < points) {
+    return res.status(400).json({ error: `Insufficient points. You have ${sender?.points ?? 0}` })
+  }
+
+  // Find parent agent's user_id
+  const parentAgent = queryOne(
+    `SELECT a2.id as parent_agent_id, a2.user_id as parent_user_id, u.name as parent_name
+     FROM agents a1
+     JOIN agents a2 ON a2.id = a1.parent_agent_id
+     JOIN users u ON u.id = a2.user_id
+     WHERE a1.id = ?`,
+    [agent_id]
+  )
+  if (!parentAgent) {
+    return res.status(400).json({ error: 'You have no parent agent to sell points to' })
+  }
+
+  const parent = queryOne('SELECT points FROM users WHERE id = ?', [parentAgent.parent_user_id])
+
+  run('UPDATE users SET points = points - ? WHERE id = ?', [points, senderUserId])
+  run('UPDATE users SET points = points + ? WHERE id = ?', [points, parentAgent.parent_user_id])
+
+  const newSenderBalance = (sender.points - points)
+  insert('INSERT INTO transactions (user_id, type, amount, balance_after, description) VALUES (?,?,?,?,?)',
+    [senderUserId, 'points_sold', -points, newSenderBalance, `Points sold back to ${parentAgent.parent_name}`])
+  insert('INSERT INTO transactions (user_id, type, amount, balance_after, description) VALUES (?,?,?,?,?)',
+    [parentAgent.parent_user_id, 'points_bought', points, ((parent?.points ?? 0) + points),
+     `Points bought back from agent`])
+
+  res.json({ ok: true, remaining_points: newSenderBalance, parent_name: parentAgent.parent_name })
+})
+
+// ── GET /api/agent-portal/family-summary — points flow across whole downline
+router.get('/family-summary', requireAgentAuth, (req, res) => {
+  const { agent_id, user_id: agentUserId } = req.agent
+
+  // Collect all descendant user IDs recursively
+  function getDescendantUserIds(aId) {
+    const childAgents = query('SELECT id, user_id FROM agents WHERE parent_agent_id = ?', [aId])
+    let userIds = childAgents.map(c => c.user_id)
+    // Players under each child agent
+    childAgents.forEach(ca => {
+      const agentUser = queryOne('SELECT id FROM users WHERE id = ?', [ca.user_id])
+      if (agentUser) {
+        const players = query('SELECT id FROM users WHERE agent_id = ?', [agentUser.id])
+        userIds = userIds.concat(players.map(p => p.id))
+      }
+      userIds = userIds.concat(getDescendantUserIds(ca.id))
+    })
+    return userIds
+  }
+
+  // Direct players of this agent
+  const directPlayers = query('SELECT id FROM users WHERE agent_id = ?', [agentUserId])
+  const allUserIds = [
+    ...directPlayers.map(p => p.id),
+    ...getDescendantUserIds(agent_id),
+  ]
+
+  if (!allUserIds.length) return res.json({ transactions: [], summary: {} })
+
+  const placeholders = allUserIds.map(() => '?').join(',')
+  const txns = query(
+    `SELECT t.*, u.name as user_name, u.role as user_role
+     FROM transactions t
+     JOIN users u ON u.id = t.user_id
+     WHERE t.user_id IN (${placeholders})
+     ORDER BY t.created_at DESC LIMIT 200`,
+    allUserIds
+  )
+
+  // Summary stats
+  const summary = {
+    total_sent:     txns.filter(t => t.type === 'points_allocated').reduce((s,t) => s + Math.abs(t.amount), 0),
+    total_sold_back:txns.filter(t => t.type === 'points_sold').reduce((s,t) => s + Math.abs(t.amount), 0),
+    total_won:      txns.filter(t => t.type === 'prize').reduce((s,t) => s + t.amount, 0),
+    total_tickets:  txns.filter(t => t.type === 'ticket_purchase').reduce((s,t) => s + Math.abs(t.amount), 0),
+    family_size:    allUserIds.length,
+  }
+
+  res.json({ transactions: txns, summary })
 })
 
 export default router

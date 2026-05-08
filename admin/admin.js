@@ -449,6 +449,7 @@ async function renderAgentTable(filterType = '') {
         <td style="display:flex;gap:4px;flex-wrap:wrap">
           <button class="btn btn-sm btn-ghost" onclick='openAgentEditModal(${JSON.stringify(a).replace(/"/g,"&quot;")})'>Edit</button>
           <button class="btn btn-sm btn-secondary" onclick="openAllocModal(${a.id},'${a.name.replace(/'/g,"\\'")}',${a.points ?? 0})">+ Points</button>
+          <button class="btn btn-sm btn-ghost" onclick="openFamilyModal(${a.id},'${a.name.replace(/'/g,"\\'")}')">👨‍👩‍👧 Family</button>
           <button class="btn btn-sm btn-danger" onclick="deleteAgent(${a.id})">Remove</button>
         </td>
       </tr>`
@@ -686,6 +687,58 @@ document.getElementById('txn-type-filter').addEventListener('change', async func
     </tr>
   `).join('')
 })
+
+// ══════════════════════════════════════════════════════════════════════════
+// AGENT FAMILY MODAL
+// ══════════════════════════════════════════════════════════════════════════
+
+document.getElementById('family-modal-close').addEventListener('click', () =>
+  document.getElementById('family-modal').classList.remove('open'))
+
+async function openFamilyModal(agentId, agentName) {
+  document.getElementById('family-modal-title').textContent = `👨‍👩‍👧 ${agentName} — Family Activity`
+  document.getElementById('family-summary-stats').innerHTML = '<p style="color:var(--muted)">Loading…</p>'
+  document.getElementById('family-txn-list').innerHTML = ''
+  document.getElementById('family-modal').classList.add('open')
+
+  const data = await GET(`/api/agents/${agentId}/family-transactions`)
+  if (!data) return
+
+  const s = data.summary
+  document.getElementById('family-summary-stats').innerHTML = `
+    <div class="card"><div class="card-title">Family Size</div><div class="card-value">${s.family_size ?? 0}</div></div>
+    <div class="card"><div class="card-title">Points Sent Down</div><div class="card-value text-success">${Number(s.points_sent ?? 0).toLocaleString()}</div></div>
+    <div class="card"><div class="card-title">Points Sold Back</div><div class="card-value text-warning">${Number(s.points_sold_back ?? 0).toLocaleString()}</div></div>
+    <div class="card"><div class="card-title">Ticket Spend</div><div class="card-value">${Number(s.ticket_spend ?? 0).toLocaleString()}</div></div>
+    <div class="card"><div class="card-title">Win Payouts</div><div class="card-value text-success">${Number(s.wins ?? 0).toLocaleString()}</div></div>
+  `
+
+  const txnList = document.getElementById('family-txn-list')
+  if (!data.transactions.length) {
+    txnList.innerHTML = '<p style="color:var(--muted);padding:16px 0">No transactions yet in this family.</p>'
+    return
+  }
+
+  const TYPE_ICONS = {
+    points_allocated: '📤', points_received: '📥', points_sold: '↩️',
+    points_bought: '↪️', ticket_purchase: '🎟️', prize: '🏆',
+    deposit: '💵', withdraw: '💸',
+  }
+  txnList.innerHTML = data.transactions.map(t => {
+    const isPos = t.amount > 0
+    const icon  = TYPE_ICONS[t.type] || (isPos ? '📥' : '📤')
+    const color = isPos ? 'var(--success)' : 'var(--danger)'
+    return `
+      <div style="display:flex;align-items:center;gap:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
+        <span style="font-size:18px;flex-shrink:0">${icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${t.user_name} <span style="color:var(--muted);font-weight:400">(${t.user_role})</span></div>
+          <div style="font-size:11px;color:var(--muted)">${t.description || t.type} · ${(t.created_at || '').slice(0,16).replace('T',' ')}</div>
+        </div>
+        <div style="font-weight:700;font-size:14px;color:${color};flex-shrink:0">${isPos ? '+' : ''}${Number(t.amount).toLocaleString()} pts</div>
+      </div>`
+  }).join('')
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // SPECIAL DRAWS PANEL

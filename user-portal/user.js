@@ -130,6 +130,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active')
     document.getElementById('tab-' + btn.dataset.tab)?.classList.add('active')
     if (btn.dataset.tab === 'tickets')      loadTickets()
+    if (btn.dataset.tab === 'sell')         loadSellTab()
     if (btn.dataset.tab === 'transactions') loadTransactions()
   })
 })
@@ -215,6 +216,57 @@ async function loadTickets() {
     el.innerHTML = `<div class="empty-state"><p>Error: ${esc(err.message)}</p></div>`
   }
 }
+
+/* ── Sell Points ── */
+function loadSellTab() {
+  const bal = Number(profile?.points ?? 0)
+  document.getElementById('sellBal').textContent = bal.toLocaleString()
+  document.getElementById('sellAmt').value = '0'
+
+  const infoEl = document.getElementById('sellAgentInfo')
+  const btn    = document.getElementById('sellBtn')
+  if (profile?.agent_name) {
+    infoEl.textContent = `Your agent is ${profile.agent_name}. Sell points back and they will be returned to your agent's balance.`
+    btn.disabled = false
+  } else {
+    infoEl.textContent = 'Your account is not linked to an agent — points cannot be sold back.'
+    btn.disabled = true
+  }
+}
+
+document.getElementById('sellBtn').addEventListener('click', async () => {
+  const errEl  = document.getElementById('sellErr')
+  const succEl = document.getElementById('sellSucc')
+  errEl.classList.add('hidden'); succEl.classList.add('hidden')
+
+  const points = parseInt(document.getElementById('sellAmt').value) || 0
+  if (points <= 0) { errEl.textContent = 'Enter a valid amount'; errEl.classList.remove('hidden'); return }
+
+  const btn = document.getElementById('sellBtn')
+  btn.disabled = true
+  try {
+    const result = await apiFetch('/api/user-portal/sell-points', {
+      method: 'POST',
+      body: JSON.stringify({ points }),
+    })
+    succEl.textContent =
+      `${points.toLocaleString()} points sold back to ${result.agent_name}. ` +
+      `Your balance: ${result.remaining_points.toLocaleString()} pts`
+    succEl.classList.remove('hidden')
+    document.getElementById('sellAmt').value = '0'
+
+    // Refresh profile to update balance everywhere
+    profile = await apiFetch('/api/user-portal/me')
+    renderTopbar()
+    document.getElementById('sellBal').textContent =
+      Number(profile.points ?? 0).toLocaleString()
+  } catch (err) {
+    errEl.textContent = err.message
+    errEl.classList.remove('hidden')
+  } finally {
+    btn.disabled = false
+  }
+})
 
 /* ── Transactions ── */
 document.getElementById('refreshTxns').addEventListener('click', loadTransactions)

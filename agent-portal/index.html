@@ -59,6 +59,8 @@
       <span id="createTabLabel">Create</span>
     </button>
     <button class="tab-btn" data-tab="allocate">Allocate Points</button>
+    <button class="tab-btn" data-tab="sell">Sell Points</button>
+    <button class="tab-btn" data-tab="family">Family Activity</button>
     <button class="tab-btn" data-tab="transactions">Transactions</button>
   </nav>
 
@@ -164,6 +166,32 @@
       </div>
       <button class="btn btn-primary" id="allocBtn">Send Points</button>
     </div>
+  </section>
+
+  <!-- ── SELL POINTS TAB ── -->
+  <section class="tab-panel" id="tab-sell">
+    <div class="form-card">
+      <h2>Sell Points to Parent</h2>
+      <p style="color:var(--text-muted);font-size:13px;margin-bottom:20px" id="sellParentInfo">Loading…</p>
+      <div id="sellError"   class="alert alert-error hidden"></div>
+      <div id="sellSuccess" class="alert alert-success hidden"></div>
+      <div class="field">
+        <label>Points to Sell Back</label>
+        <input type="number" id="sellPoints" value="0" min="1" step="1" />
+        <small class="field-hint">Your balance: <span id="sellBalanceHint">0</span> pts</small>
+      </div>
+      <button class="btn btn-primary" id="sellBtn">Sell Points</button>
+    </div>
+  </section>
+
+  <!-- ── FAMILY ACTIVITY TAB ── -->
+  <section class="tab-panel" id="tab-family">
+    <div class="panel-header">
+      <h2>Family Activity</h2>
+      <button class="btn btn-secondary btn-sm" id="refreshFamily">↺ Refresh</button>
+    </div>
+    <div id="familySummary" class="stats-grid" style="margin-bottom:20px"></div>
+    <div id="familyTxnList" class="txn-list"></div>
   </section>
 
   <!-- ── TRANSACTIONS TAB ── -->

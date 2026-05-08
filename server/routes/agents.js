@@ -160,6 +160,57 @@ router.post('/:id/add-points', requireAuth, (req, res) => {
   res.json({ ok: true, points: newPoints })
 })
 
+// GET /api/agents/:id/family-transactions — admin view of all transactions in an agent's family
+router.get('/:id/family-transactions', requireAuth, (req, res) => {
+  const agent = queryOne('SELECT * FROM agents WHERE id = ?', [req.params.id])
+  if (!agent) return res.status(404).json({ error: 'Agent not found' })
+
+  function getDescendantUserIds(aId) {
+    const childAgents = query('SELECT id, user_id FROM agents WHERE parent_agent_id = ?', [aId])
+    let userIds = childAgents.map(c => c.user_id)
+    childAgents.forEach(ca => {
+      const players = query('SELECT id FROM users WHERE agent_id = ?', [ca.user_id])
+      userIds = userIds.concat(players.map(p => p.id))
+      userIds = userIds.concat(getDescendantUserIds(ca.id))
+    })
+    return userIds
+  }
+
+  const agentUserRow = queryOne('SELECT id FROM users WHERE id = ?', [agent.user_id])
+  const directPlayers = agentUserRow
+    ? query('SELECT id FROM users WHERE agent_id = ?', [agentUserRow.id])
+    : []
+
+  const allUserIds = [
+    agent.user_id,
+    ...directPlayers.map(p => p.id),
+    ...getDescendantUserIds(Number(req.params.id)),
+  ]
+  const unique = [...new Set(allUserIds)]
+
+  if (!unique.length) return res.json({ transactions: [], summary: {} })
+
+  const placeholders = unique.map(() => '?').join(',')
+  const txns = query(
+    `SELECT t.*, u.name as user_name, u.role as user_role
+     FROM transactions t
+     JOIN users u ON u.id = t.user_id
+     WHERE t.user_id IN (${placeholders})
+     ORDER BY t.created_at DESC LIMIT 500`,
+    unique
+  )
+
+  const summary = {
+    family_size:      unique.length - 1, // exclude the agent themselves
+    points_sent:      txns.filter(t => t.type === 'points_allocated').reduce((s,t) => s + Math.abs(t.amount), 0),
+    points_sold_back: txns.filter(t => t.type === 'points_sold').reduce((s,t) => s + Math.abs(t.amount), 0),
+    wins:             txns.filter(t => t.type === 'prize').reduce((s,t) => s + t.amount, 0),
+    ticket_spend:     txns.filter(t => t.type === 'ticket_purchase').reduce((s,t) => s + Math.abs(t.amount), 0),
+  }
+
+  res.json({ transactions: txns, summary })
+})
+
 // GET /api/agents/:id/downline — all agents and users under this agent
 router.get('/:id/downline', requireAuth, (req, res) => {
   const agent = queryOne('SELECT * FROM agents WHERE id = ?', [req.params.id])

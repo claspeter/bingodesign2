@@ -87,6 +87,7 @@
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="overview">Overview</button>
     <button class="tab-btn" data-tab="tickets">My Tickets</button>
+    <button class="tab-btn" data-tab="sell">Sell Points</button>
     <button class="tab-btn" data-tab="transactions">Transactions</button>
   </nav>
 
@@ -130,6 +131,24 @@
       <button class="btn btn-secondary btn-sm" id="refreshTickets">↺ Refresh</button>
     </div>
     <div id="ticketList" class="card-list"></div>
+  </section>
+
+  <!-- ── SELL POINTS ── -->
+  <section class="tab-panel" id="tab-sell">
+    <div class="profile-card" style="max-width:440px">
+      <h3>Sell Points Back to Agent</h3>
+      <p id="sellAgentInfo" style="color:var(--muted);font-size:13px;margin:10px 0 20px"></p>
+      <div id="sellErr"  class="alert alert-error   hidden"></div>
+      <div id="sellSucc" class="alert alert-success hidden"></div>
+      <div class="field" style="margin-bottom:16px">
+        <label>Points to sell</label>
+        <input type="number" id="sellAmt" value="0" min="1" step="1" />
+        <small style="color:var(--muted);font-size:11px;display:block;margin-top:5px">
+          Your balance: <span id="sellBal">0</span> pts
+        </small>
+      </div>
+      <button class="btn btn-primary" id="sellBtn">Sell Points</button>
+    </div>
   </section>
 
   <!-- ── TRANSACTIONS ── -->

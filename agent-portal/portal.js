@@ -88,8 +88,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     const panel = document.getElementById('tab-' + btn.dataset.tab)
     if (panel) panel.classList.add('active')
     // lazy load tab data
-    if (btn.dataset.tab === 'downline')    loadDownline()
-    if (btn.dataset.tab === 'allocate')    loadAllocateTab()
+    if (btn.dataset.tab === 'downline')     loadDownline()
+    if (btn.dataset.tab === 'allocate')     loadAllocateTab()
+    if (btn.dataset.tab === 'sell')         loadSellTab()
+    if (btn.dataset.tab === 'family')       loadFamilyActivity()
     if (btn.dataset.tab === 'transactions') loadTransactions()
   })
 })
@@ -336,6 +338,108 @@ document.getElementById('allocBtn').addEventListener('click', async () => {
     btn.disabled = false
   }
 })
+
+/* ── Sell Points tab ──────────────────────────────────────────────────── */
+function loadSellTab() {
+  document.getElementById('sellBalanceHint').textContent =
+    Number(agentInfo?.points ?? 0).toLocaleString()
+
+  // Check if there's a parent to sell to
+  apiFetch('/api/agent-portal/me').then(me => {
+    agentInfo = me
+    document.getElementById('sellBalanceHint').textContent =
+      Number(me.points ?? 0).toLocaleString()
+  })
+
+  // We'll check for parent existence at submit time — show a hint
+  const info = document.getElementById('sellParentInfo')
+  if (agentInfo?.agent_type === 'super_agent') {
+    info.textContent = 'As a Super Agent you have no parent — contact admin to redeem points.'
+    document.getElementById('sellBtn').disabled = true
+  } else {
+    info.textContent = 'Sell points back up the chain. Points will be returned to your parent agent.'
+    document.getElementById('sellBtn').disabled = false
+  }
+}
+
+document.getElementById('sellBtn').addEventListener('click', async () => {
+  const errEl  = document.getElementById('sellError')
+  const succEl = document.getElementById('sellSuccess')
+  hideAlert(errEl); hideAlert(succEl)
+
+  const points = parseInt(document.getElementById('sellPoints').value) || 0
+  if (points <= 0) { showAlert(errEl, 'Enter a valid amount'); return }
+
+  const btn = document.getElementById('sellBtn')
+  btn.disabled = true
+  try {
+    const result = await apiFetch('/api/agent-portal/sell-points', {
+      method: 'POST',
+      body: JSON.stringify({ points }),
+    })
+    showAlert(succEl,
+      `${points.toLocaleString()} points sold back to ${result.parent_name}. ` +
+      `Your balance: ${result.remaining_points.toLocaleString()} pts`)
+    document.getElementById('sellPoints').value = '0'
+    agentInfo = await apiFetch('/api/agent-portal/me')
+    renderTopbar()
+    document.getElementById('sellBalanceHint').textContent =
+      Number(agentInfo.points ?? 0).toLocaleString()
+  } catch (err) {
+    showAlert(errEl, err.message)
+  } finally {
+    btn.disabled = false
+  }
+})
+
+/* ── Family Activity tab ──────────────────────────────────────────────── */
+document.getElementById('refreshFamily').addEventListener('click', () => loadFamilyActivity(true))
+
+async function loadFamilyActivity(force = false) {
+  const summaryEl = document.getElementById('familySummary')
+  const listEl    = document.getElementById('familyTxnList')
+  summaryEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Loading…</div>'
+  listEl.innerHTML = ''
+
+  try {
+    const data = await apiFetch('/api/agent-portal/family-summary')
+    const s = data.summary
+
+    summaryEl.innerHTML = `
+      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${s.family_size ?? 0}</div><div class="stat-label">Family Size</div></div>
+      <div class="stat-card"><div class="stat-icon">📤</div><div class="stat-value">${Number(s.total_sent ?? 0).toLocaleString()}</div><div class="stat-label">Points Sent</div></div>
+      <div class="stat-card"><div class="stat-icon">↩️</div><div class="stat-value">${Number(s.total_sold_back ?? 0).toLocaleString()}</div><div class="stat-label">Sold Back</div></div>
+      <div class="stat-card"><div class="stat-icon">🎟️</div><div class="stat-value">${Number(s.total_tickets ?? 0).toLocaleString()}</div><div class="stat-label">Ticket Spend</div></div>
+      <div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-value">${Number(s.total_won ?? 0).toLocaleString()}</div><div class="stat-label">Win Payouts</div></div>
+    `
+
+    if (!data.transactions.length) {
+      listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No family transactions yet</p></div>'
+      return
+    }
+
+    const TYPE_ICONS = {
+      points_allocated: '📤', points_received: '📥', points_sold: '↩️',
+      points_bought: '↪️', ticket_purchase: '🎟️', prize: '🏆',
+      deposit: '💵', withdraw: '💸',
+    }
+    listEl.innerHTML = data.transactions.map(t => {
+      const isPos = t.amount > 0
+      const icon  = TYPE_ICONS[t.type] || (isPos ? '📥' : '📤')
+      return `
+        <div class="txn-row">
+          <div class="txn-icon">${icon}</div>
+          <div class="txn-info">
+            <div class="txn-desc">${esc(t.user_name)} <span style="color:var(--text-muted);font-size:11px">(${esc(t.user_role)})</span></div>
+            <div class="txn-date">${esc(t.description || t.type)} · ${fmtDate(t.created_at)}</div>
+          </div>
+          <div class="txn-amount ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : ''}${Number(t.amount).toLocaleString()} pts</div>
+        </div>`
+    }).join('')
+  } catch (err) {
+    summaryEl.innerHTML = `<div class="empty-state"><p>Error: ${esc(err.message)}</p></div>`
+  }
+}
 
 /* ── Transactions tab ─────────────────────────────────────────────────── */
 document.getElementById('refreshTxns').addEventListener('click', loadTransactions)
