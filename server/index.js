@@ -17,6 +17,7 @@ import agentPortalRoutes from './routes/agentPortal.js'
 import userAuthRoutes      from './routes/userAuth.js'
 import userPortalRoutes    from './routes/userPortal.js'
 import specialDrawsRoutes  from './routes/specialDraws.js'
+import systemTicketsRoutes from './routes/systemTickets.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -44,7 +45,8 @@ app.use('/api/agent-auth',   agentAuthRoutes)
 app.use('/api/agent-portal', agentPortalRoutes)
 app.use('/api/user-auth',      userAuthRoutes)
 app.use('/api/user-portal',    userPortalRoutes)
-app.use('/api/special-draws',  specialDrawsRoutes)
+app.use('/api/special-draws',   specialDrawsRoutes)
+app.use('/api/system-tickets',  systemTicketsRoutes)
 
 // ── Live draw (Socket.io) ─────────────────────────────────────────────────
 const DRAW_INTERVAL_MS = 7000

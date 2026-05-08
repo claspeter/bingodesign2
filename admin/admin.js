@@ -697,6 +697,138 @@ document.getElementById('txn-type-filter').addEventListener('change', async func
 })
 
 // ══════════════════════════════════════════════════════════════════════════
+// SYSTEM TICKETS (password-locked)
+// ══════════════════════════════════════════════════════════════════════════
+
+const SYS_PASS = 'Tadj55'
+
+function openSysLock() {
+  document.getElementById('sys-lock-password').value = ''
+  document.getElementById('sys-lock-error').classList.add('hidden')
+  document.getElementById('sys-lock-modal').classList.add('open')
+  setTimeout(() => document.getElementById('sys-lock-password').focus(), 120)
+}
+
+document.getElementById('sys-lock-form').addEventListener('submit', e => {
+  e.preventDefault()
+  const val = document.getElementById('sys-lock-password').value
+  if (val !== SYS_PASS) {
+    const err = document.getElementById('sys-lock-error')
+    err.textContent = 'Incorrect password'
+    err.classList.remove('hidden')
+    document.getElementById('sys-lock-password').value = ''
+    return
+  }
+  document.getElementById('sys-lock-modal').classList.remove('open')
+  openSysTickets()
+})
+
+async function openSysTickets() {
+  document.getElementById('sys-tickets-modal').classList.add('open')
+  await Promise.all([loadSysDrawSelector(), loadSysTickets()])
+}
+
+async function loadSysDrawSelector() {
+  const draws = await GET('/api/system-tickets/draws')
+  if (!draws) return
+  const sel = document.getElementById('sys-draw-select')
+  sel.innerHTML = draws.map(d =>
+    `<option value="${d.id}" data-label="${d.title} (${d.draw_date})">${d.title} — ${d.draw_date} ${d.draw_time} [${d.type ?? 'regular'}]</option>`
+  ).join('')
+}
+
+async function loadSysTickets() {
+  const data = await GET('/api/system-tickets')
+  if (!data) return
+
+  // Summary
+  const s = data.summary || {}
+  document.getElementById('sys-summary').innerHTML = `
+    <div class="card"><div class="card-title">Total Entries</div><div class="card-value">${s.total_entries ?? 0}</div></div>
+    <div class="card"><div class="card-title">Total Tickets</div><div class="card-value">${Number(s.total_tickets ?? 0).toLocaleString()}</div></div>
+    <div class="card"><div class="card-title">Total Wins</div><div class="card-value text-success">${Number(s.total_wins ?? 0).toLocaleString()} pts</div></div>
+  `
+
+  // Table
+  const tbody = document.getElementById('sys-tickets-tbody')
+  if (!data.entries.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No entries yet — use the form above to add tickets to a draw</td></tr>'
+    return
+  }
+  tbody.innerHTML = data.entries.map(e => `
+    <tr id="sys-row-${e.id}">
+      <td>#${e.id}</td>
+      <td><strong>${e.draw_label}</strong>${e.draw_date ? `<br><span style="font-size:11px;color:var(--muted)">${e.draw_date} ${e.draw_time ?? ''}</span>` : ''}</td>
+      <td>
+        <input type="number" value="${e.ticket_count}" min="1"
+          style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:13px"
+          onchange="updateSysTicket(${e.id},{ticket_count:+this.value})" />
+      </td>
+      <td>
+        <input type="number" value="${e.win_amount}" min="0"
+          style="width:100px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:13px"
+          onchange="updateSysTicket(${e.id},{win_amount:+this.value})" />
+      </td>
+      <td style="max-width:180px">
+        <input type="text" value="${e.notes ?? ''}" placeholder="—"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px"
+          onchange="updateSysTicket(${e.id},{notes:this.value})" />
+      </td>
+      <td style="font-size:11px;color:var(--muted)">${(e.created_at || '').slice(0,16).replace('T',' ')}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteSysTicket(${e.id})">Delete</button>
+      </td>
+    </tr>`).join('')
+}
+
+document.getElementById('sys-add-btn').addEventListener('click', async () => {
+  const errEl       = document.getElementById('sys-add-error')
+  errEl.classList.add('hidden')
+  const sel         = document.getElementById('sys-draw-select')
+  const drawId      = sel.value ? Number(sel.value) : null
+  const drawLabel   = sel.options[sel.selectedIndex]?.dataset?.label || sel.options[sel.selectedIndex]?.text || 'Unknown Draw'
+  const ticketCount = Number(document.getElementById('sys-ticket-count').value) || 0
+  const winAmount   = Number(document.getElementById('sys-win-amount').value)   || 0
+  const notes       = document.getElementById('sys-notes').value.trim()
+
+  if (ticketCount < 1) { errEl.textContent = 'Enter at least 1 ticket'; errEl.classList.remove('hidden'); return }
+
+  const btn = document.getElementById('sys-add-btn')
+  btn.disabled = true
+  const res = await POST('/api/system-tickets', { draw_id: drawId, draw_label: drawLabel, ticket_count: ticketCount, win_amount: winAmount, notes: notes || null })
+  btn.disabled = false
+
+  if (res?.error) { errEl.textContent = res.error; errEl.classList.remove('hidden'); return }
+
+  document.getElementById('sys-ticket-count').value = 100
+  document.getElementById('sys-win-amount').value   = 0
+  document.getElementById('sys-notes').value        = ''
+  toast(`${ticketCount} system tickets added to draw`)
+  loadSysTickets()
+})
+
+async function updateSysTicket(id, fields) {
+  const res = await PUT(`/api/system-tickets/${id}`, fields)
+  if (res?.error) { toast(res.error, 'error'); return }
+  // Reload summary only
+  const data = await GET('/api/system-tickets')
+  if (!data) return
+  const s = data.summary || {}
+  document.getElementById('sys-summary').innerHTML = `
+    <div class="card"><div class="card-title">Total Entries</div><div class="card-value">${s.total_entries ?? 0}</div></div>
+    <div class="card"><div class="card-title">Total Tickets</div><div class="card-value">${Number(s.total_tickets ?? 0).toLocaleString()}</div></div>
+    <div class="card"><div class="card-title">Total Wins</div><div class="card-value text-success">${Number(s.total_wins ?? 0).toLocaleString()} pts</div></div>
+  `
+}
+
+async function deleteSysTicket(id) {
+  if (!confirm('Delete this system ticket entry?')) return
+  await DELETE(`/api/system-tickets/${id}`)
+  toast('Entry deleted')
+  loadSysTickets()
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // AGENT FAMILY MODAL
 // ══════════════════════════════════════════════════════════════════════════
 

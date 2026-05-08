@@ -140,6 +140,16 @@ function createSchema() {
       last_won_by TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS system_tickets (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      draw_id      INTEGER REFERENCES draws(id),
+      draw_label   TEXT NOT NULL,
+      ticket_count INTEGER NOT NULL DEFAULT 0,
+      win_amount   REAL DEFAULT 0,
+      notes        TEXT,
+      created_at   TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS transactions (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id      INTEGER NOT NULL REFERENCES users(id),

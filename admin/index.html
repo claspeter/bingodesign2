@@ -38,7 +38,10 @@
       <div class="nav-item" data-panel="users"><span class="icon">👥</span> Users</div>
       <div class="nav-item" data-panel="agents"><span class="icon">🤝</span> Agents</div>
       <div class="nav-item" data-panel="payouts"><span class="icon">💳</span> Payouts &amp; Accounts</div>
-      <div class="nav-item" data-panel="special"><span class="icon">✨</span> Special Draws</div>
+      <div class="nav-item" data-panel="special" style="display:flex;align-items:center;justify-content:space-between">
+        <span><span class="icon">✨</span> Special Draws</span>
+        <button id="sys-lock-btn" title="System Tickets" onclick="event.stopPropagation();openSysLock()" style="background:none;border:none;cursor:pointer;font-size:14px;padding:2px 4px;opacity:.5;transition:opacity .15s" onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.5">🔒</button>
+      </div>
     </div>
     <div class="sidebar-footer">
       <button class="btn-logout" id="logout-btn">Sign Out</button>
@@ -434,6 +437,75 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" id="agent-modal-cancel">Cancel</button>
       <button class="btn btn-primary" id="agent-modal-save">Save Agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── System Lock password dialog ────────────────────────────────────── -->
+<div class="modal-backdrop" id="sys-lock-modal">
+  <div class="modal" style="max-width:340px;text-align:center">
+    <div style="font-size:40px;margin-bottom:12px">🔒</div>
+    <h3 style="margin-bottom:6px">System Access</h3>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Enter the system password to continue</p>
+    <div id="sys-lock-error" class="alert alert-error hidden" style="text-align:left"></div>
+    <form id="sys-lock-form">
+      <input type="password" id="sys-lock-password" placeholder="Password" autocomplete="off"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;outline:none;margin-bottom:14px" />
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn btn-ghost" style="flex:1" onclick="document.getElementById('sys-lock-modal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="flex:1">Unlock</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── System Tickets dialog ───────────────────────────────────────────── -->
+<div class="modal-backdrop" id="sys-tickets-modal">
+  <div class="modal" style="max-width:720px;max-height:88vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <h3 style="margin-bottom:2px">🎟️ System Tickets</h3>
+        <p style="color:var(--muted);font-size:12px">Free tickets allocated by the house — wins tracked separately</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sys-tickets-modal').classList.remove('open')">✕ Close</button>
+    </div>
+
+    <!-- Summary bar -->
+    <div id="sys-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px"></div>
+
+    <!-- Add entry form -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:22px">
+      <h4 style="font-size:13px;margin-bottom:14px">Allocate System Tickets</h4>
+      <div id="sys-add-error" class="alert alert-error hidden"></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Draw</label>
+          <select id="sys-draw-select" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px"></select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Tickets</label>
+          <input type="number" id="sys-ticket-count" value="100" min="1" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Win Amount (pts)</label>
+          <input type="number" id="sys-win-amount" value="0" min="0" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px" />
+        </div>
+        <button class="btn btn-primary" id="sys-add-btn" style="white-space:nowrap;height:38px">Add Entry</button>
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px">Notes (optional)</label>
+        <input type="text" id="sys-notes" placeholder="e.g. Christmas promotion" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px" />
+      </div>
+    </div>
+
+    <!-- Entries table -->
+    <div class="table-wrap" style="margin:0">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Draw</th><th>Tickets</th><th>Win (pts)</th><th>Notes</th><th>Date</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="sys-tickets-tbody"></tbody>
+      </table>
     </div>
   </div>
 </div>
