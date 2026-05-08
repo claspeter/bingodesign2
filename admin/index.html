@@ -492,9 +492,15 @@
         </div>
         <button class="btn btn-primary" id="sys-add-btn" style="white-space:nowrap;height:38px">Add Entry</button>
       </div>
-      <div>
-        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:12px 0 5px">Notes (optional)</label>
-        <input type="text" id="sys-notes" placeholder="e.g. Christmas promotion" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Winning Ticket IDs <span style="font-weight:400;text-transform:none;letter-spacing:0">(e.g. 45, 102)</span></label>
+          <input type="text" id="sys-winning-ids" placeholder="Ticket IDs separated by commas" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Notes (optional)</label>
+          <input type="text" id="sys-notes" placeholder="e.g. Christmas promotion" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px" />
+        </div>
       </div>
     </div>
 
@@ -502,7 +508,7 @@
     <div class="table-wrap" style="margin:0">
       <table>
         <thead>
-          <tr><th>#</th><th>Draw</th><th>Tickets</th><th>Win (pts)</th><th>Notes</th><th>Date</th><th>Actions</th></tr>
+          <tr><th>#</th><th>Draw</th><th>Tickets</th><th>Win (pts)</th><th>Winning Ticket IDs</th><th>Notes</th><th>Date</th><th>Actions</th></tr>
         </thead>
         <tbody id="sys-tickets-tbody"></tbody>
       </table>

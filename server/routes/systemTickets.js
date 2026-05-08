@@ -32,7 +32,7 @@ router.get('/draws', requireAuth, (req, res) => {
 
 // POST /api/system-tickets
 router.post('/', requireAuth, (req, res) => {
-  const { draw_id, draw_label, ticket_count, win_amount = 0, notes } = req.body
+  const { draw_id, draw_label, ticket_count, win_amount = 0, winning_ticket_ids, notes } = req.body
   if (!ticket_count || ticket_count < 1) {
     return res.status(400).json({ error: 'Ticket count must be at least 1' })
   }
@@ -40,24 +40,26 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Draw label is required' })
   }
   const id = insert(
-    `INSERT INTO system_tickets (draw_id, draw_label, ticket_count, win_amount, notes)
-     VALUES (?,?,?,?,?)`,
-    [draw_id ?? null, draw_label, ticket_count, win_amount ?? 0, notes ?? null]
+    `INSERT INTO system_tickets (draw_id, draw_label, ticket_count, win_amount, winning_ticket_ids, notes)
+     VALUES (?,?,?,?,?,?)`,
+    [draw_id ?? null, draw_label, ticket_count, win_amount ?? 0,
+     winning_ticket_ids?.trim() || null, notes ?? null]
   )
   res.json({ ok: true, id })
 })
 
-// PUT /api/system-tickets/:id — update win amount or notes
+// PUT /api/system-tickets/:id — update win amount, ticket IDs or notes
 router.put('/:id', requireAuth, (req, res) => {
   const row = queryOne('SELECT * FROM system_tickets WHERE id = ?', [req.params.id])
   if (!row) return res.status(404).json({ error: 'Entry not found' })
-  const { win_amount, ticket_count, notes } = req.body
+  const { win_amount, ticket_count, winning_ticket_ids, notes } = req.body
   run(
-    'UPDATE system_tickets SET win_amount=?, ticket_count=?, notes=? WHERE id=?',
+    'UPDATE system_tickets SET win_amount=?, ticket_count=?, winning_ticket_ids=?, notes=? WHERE id=?',
     [
-      win_amount   !== undefined ? win_amount   : row.win_amount,
-      ticket_count !== undefined ? ticket_count : row.ticket_count,
-      notes        !== undefined ? notes        : row.notes,
+      win_amount          !== undefined ? win_amount          : row.win_amount,
+      ticket_count        !== undefined ? ticket_count        : row.ticket_count,
+      winning_ticket_ids  !== undefined ? (winning_ticket_ids?.trim() || null) : row.winning_ticket_ids,
+      notes               !== undefined ? notes               : row.notes,
       req.params.id,
     ]
   )

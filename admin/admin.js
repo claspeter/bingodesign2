@@ -770,6 +770,13 @@ async function loadSysTickets() {
           onchange="updateSysTicket(${e.id},{win_amount:+this.value})" />
       </td>
       <td style="max-width:180px">
+        ${e.win_amount > 0 ? `
+          <input type="text" value="${e.winning_ticket_ids ?? ''}" placeholder="e.g. 45, 102"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px"
+            onchange="updateSysTicket(${e.id},{winning_ticket_ids:this.value})" />
+        ` : '<span style="color:var(--muted);font-size:12px">—</span>'}
+      </td>
+      <td style="max-width:160px">
         <input type="text" value="${e.notes ?? ''}" placeholder="—"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px"
           onchange="updateSysTicket(${e.id},{notes:this.value})" />
@@ -788,20 +795,22 @@ document.getElementById('sys-add-btn').addEventListener('click', async () => {
   const drawId      = sel.value ? Number(sel.value) : null
   const drawLabel   = sel.options[sel.selectedIndex]?.dataset?.label || sel.options[sel.selectedIndex]?.text || 'Unknown Draw'
   const ticketCount = Number(document.getElementById('sys-ticket-count').value) || 0
-  const winAmount   = Number(document.getElementById('sys-win-amount').value)   || 0
-  const notes       = document.getElementById('sys-notes').value.trim()
+  const winAmount      = Number(document.getElementById('sys-win-amount').value)   || 0
+  const winningIds     = document.getElementById('sys-winning-ids').value.trim()
+  const notes          = document.getElementById('sys-notes').value.trim()
 
   if (ticketCount < 1) { errEl.textContent = 'Enter at least 1 ticket'; errEl.classList.remove('hidden'); return }
 
   const btn = document.getElementById('sys-add-btn')
   btn.disabled = true
-  const res = await POST('/api/system-tickets', { draw_id: drawId, draw_label: drawLabel, ticket_count: ticketCount, win_amount: winAmount, notes: notes || null })
+  const res = await POST('/api/system-tickets', { draw_id: drawId, draw_label: drawLabel, ticket_count: ticketCount, win_amount: winAmount, winning_ticket_ids: winningIds || null, notes: notes || null })
   btn.disabled = false
 
   if (res?.error) { errEl.textContent = res.error; errEl.classList.remove('hidden'); return }
 
   document.getElementById('sys-ticket-count').value = 100
   document.getElementById('sys-win-amount').value   = 0
+  document.getElementById('sys-winning-ids').value  = ''
   document.getElementById('sys-notes').value        = ''
   toast(`${ticketCount} system tickets added to draw`)
   loadSysTickets()

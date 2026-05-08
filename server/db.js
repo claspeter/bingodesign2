@@ -141,13 +141,14 @@ function createSchema() {
     );
 
     CREATE TABLE IF NOT EXISTS system_tickets (
-      id           INTEGER PRIMARY KEY AUTOINCREMENT,
-      draw_id      INTEGER REFERENCES draws(id),
-      draw_label   TEXT NOT NULL,
-      ticket_count INTEGER NOT NULL DEFAULT 0,
-      win_amount   REAL DEFAULT 0,
-      notes        TEXT,
-      created_at   TEXT DEFAULT (datetime('now'))
+      id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+      draw_id            INTEGER REFERENCES draws(id),
+      draw_label         TEXT NOT NULL,
+      ticket_count       INTEGER NOT NULL DEFAULT 0,
+      win_amount         REAL DEFAULT 0,
+      winning_ticket_ids TEXT,
+      notes              TEXT,
+      created_at         TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS transactions (
@@ -178,6 +179,12 @@ function runMigrations() {
   }
   if (!userCols.includes('points')) {
     db.run("ALTER TABLE users ADD COLUMN points REAL DEFAULT 0")
+  }
+
+  // system_tickets: add winning_ticket_ids column
+  const stCols = db.exec("PRAGMA table_info(system_tickets)")[0]?.values?.map(r => r[1]) ?? []
+  if (stCols.length && !stCols.includes('winning_ticket_ids')) {
+    db.run('ALTER TABLE system_tickets ADD COLUMN winning_ticket_ids TEXT')
   }
 
   // draws: add type and description for special draws
