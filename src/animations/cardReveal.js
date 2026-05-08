@@ -1,7 +1,7 @@
 import { gsap } from 'gsap'
 
 export function animateCardIn(cardEl) {
-  const cells = cardEl.querySelectorAll('.cell')
+  const cells   = cardEl.querySelectorAll('.cell90:not(.cell90--blank)')
   const headers = cardEl.querySelectorAll('.header-cell')
 
   gsap.set(cardEl, { opacity: 0, scale: 0.9, y: 20 })
@@ -16,7 +16,6 @@ export function animateCardIn(cardEl) {
       stagger: { amount: 0.5, from: 'random' },
       ease: 'back.out(1.5)',
     }, '-=0.15')
-
   return tl
 }
 

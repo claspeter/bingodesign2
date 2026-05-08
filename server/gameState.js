@@ -8,7 +8,7 @@ export function createGameState() {
 export function drawNumber(state) {
   if (state.gameOver) return null
   const available = []
-  for (let i = 1; i <= 75; i++) {
+  for (let i = 1; i <= 90; i++) {
     if (!state.called.has(i)) available.push(i)
   }
   if (!available.length) return null

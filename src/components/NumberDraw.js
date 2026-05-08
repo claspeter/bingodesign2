@@ -3,22 +3,22 @@ import { animateBallDrop, animateChipAppear } from '../animations/numberBall.js'
 
 export class NumberDraw {
   constructor(ballEl, calledEl) {
-    this.ballEl = ballEl
+    this.ballEl   = ballEl
     this.calledEl = calledEl
-    this.called = new Set()
+    this.called   = new Set()
   }
 
   display(number) {
-    const letter = getColumn(number)
-    const color = COL_COLORS[letter]
+    const group = getColumn(number)
+    const color = COL_COLORS[group]
 
-    this.ballEl.querySelector('.ball-letter').textContent = letter
-    this.ballEl.querySelector('.ball-number').textContent = number
-    animateBallDrop(this.ballEl, letter)
+    const numEl = this.ballEl.querySelector('.ball-number')
+    if (numEl) numEl.textContent = number
+    animateBallDrop(this.ballEl, color)
 
     const chip = document.createElement('div')
-    chip.className = 'called-chip'
-    chip.textContent = `${letter}${number}`
+    chip.className   = 'called-chip'
+    chip.textContent = number
     chip.style.cssText = `color:${color};background:${color}22;border:1px solid ${color}55`
     this.calledEl.prepend(chip)
     animateChipAppear(chip)
@@ -28,8 +28,12 @@ export class NumberDraw {
 
   reset() {
     this.called.clear()
-    this.calledEl.innerHTML = ''
-    this.ballEl.querySelector('.ball-letter').textContent = '?'
-    this.ballEl.querySelector('.ball-number').textContent = '--'
+    if (this.calledEl) this.calledEl.innerHTML = ''
+    const numEl = this.ballEl.querySelector('.ball-number')
+    if (numEl) numEl.textContent = '--'
+    this.ballEl.style.background  = ''
+    this.ballEl.style.borderColor = ''
+    this.ballEl.style.boxShadow   = ''
+    this.ballEl.style.color       = ''
   }
 }
