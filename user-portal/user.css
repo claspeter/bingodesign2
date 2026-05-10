@@ -360,3 +360,233 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ════════════════════════════════════════════
+   BINGO TICKET GRID
+   ════════════════════════════════════════════ */
+
+/* Wrapper for a full 6-card ticket */
+.bingo-ticket-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+.bingo-ticket-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.bingo-ticket-meta strong { color: var(--text); }
+
+/* Individual card */
+.bingo-card {
+  margin-bottom: 10px;
+}
+.bingo-card:last-child { margin-bottom: 0; }
+
+.card-code-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 3px;
+  padding-left: 2px;
+}
+
+/* The 3×9 grid table */
+.card-grid {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 300px;
+  table-layout: fixed;
+}
+.card-grid td {
+  border: 1px solid #2a2a4a;
+  text-align: center;
+  height: 34px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  transition: background .2s, color .2s;
+}
+.card-grid td.blank {
+  background: #0a0a18;
+}
+.card-grid td.num {
+  background: var(--surface2);
+  cursor: default;
+}
+.card-grid td.called {
+  background: #1e1e3a;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.card-grid td.line-win {
+  background: rgba(16,185,129,.25);
+  color: #6ee7b7;
+  font-weight: 900;
+}
+.card-grid td.bingo-win {
+  background: rgba(124,58,237,.35);
+  color: #c4b5fd;
+  font-weight: 900;
+}
+
+/* Separator strip between cards (like the BLUE strip in the image) */
+.card-sep {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .2em;
+  color: #1e3a5f;
+  background: #0d1f30;
+  padding: 3px 0;
+  margin: 0;
+}
+
+/* ── Watch Live button on ticket card ── */
+.btn-watch {
+  background: rgba(6,182,212,.1);
+  color: var(--accent);
+  border: 1px solid rgba(6,182,212,.3);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-watch:hover { background: rgba(6,182,212,.2); }
+
+/* ════════════════════════════════════════════
+   LIVE DRAW TAB
+   ════════════════════════════════════════════ */
+.live-status {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.live-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.live-dot.on  { background: var(--success); animation: pulse 1.4s infinite; }
+.live-dot.off { background: var(--danger); }
+
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: .3; }
+}
+
+.live-picker { margin-bottom: 24px; }
+.picker-hint { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.picker-list { display: flex; flex-direction: column; gap: 8px; }
+
+.picker-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.picker-item strong { font-size: 14px; }
+
+.live-ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.live-ticket-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.live-ticket-grid { /* same as bingo-ticket-wrap but no extra bg */ }
+
+/* ════════════════════════════════════════════
+   WIN OVERLAY
+   ════════════════════════════════════════════ */
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+}
+
+.win-modal {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  animation: popIn .3s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes popIn {
+  from { transform: scale(.8); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+.win-badge {
+  display: inline-block;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  padding: 6px 24px;
+  border-radius: 40px;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+.win-badge.line  { background: rgba(16,185,129,.2);  color: #34d399; border: 2px solid #34d399; }
+.win-badge.bingo { background: rgba(124,58,237,.25); color: #c4b5fd; border: 2px solid #a78bfa; }
+
+.win-card-id {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.win-card-grid {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  margin: 0 auto 20px;
+}
+.win-card-grid td {
+  border: 1px solid #2a2a4a;
+  text-align: center;
+  height: 40px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.win-card-grid td.blank  { background: #0a0a18; }
+.win-card-grid td.num    { background: var(--surface2); color: var(--text); }
+.win-card-grid td.called { background: #1e1e3a; color: var(--muted); text-decoration: line-through; }
+.win-card-grid td.line-win  { background: rgba(16,185,129,.3); color: #6ee7b7; font-weight: 900; }
+.win-card-grid td.bingo-win { background: rgba(124,58,237,.35); color: #c4b5fd; font-weight: 900; }

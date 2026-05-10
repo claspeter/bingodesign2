@@ -87,6 +87,7 @@
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="overview">Overview</button>
     <button class="tab-btn" data-tab="tickets">My Tickets</button>
+    <button class="tab-btn" data-tab="live">Live Draw</button>
     <button class="tab-btn" data-tab="sell">Sell Points</button>
     <button class="tab-btn" data-tab="transactions">Transactions</button>
   </nav>
@@ -133,6 +134,22 @@
     <div id="ticketList" class="card-list"></div>
   </section>
 
+  <!-- ── LIVE DRAW ── -->
+  <section class="tab-panel" id="tab-live">
+    <div id="liveStatus" class="live-status">Connecting…</div>
+    <div id="liveTicketPicker" class="live-picker hidden">
+      <p class="picker-hint">Select a ticket to watch:</p>
+      <div id="livePickerList" class="picker-list"></div>
+    </div>
+    <div id="liveTicketView" class="hidden">
+      <div class="live-ticket-header">
+        <span id="liveTicketLabel" class="live-ticket-label"></span>
+        <button class="btn btn-ghost btn-sm" id="liveChangeTkt">Change ticket</button>
+      </div>
+      <div id="liveTicketGrid" class="live-ticket-grid"></div>
+    </div>
+  </section>
+
   <!-- ── SELL POINTS ── -->
   <section class="tab-panel" id="tab-sell">
     <div class="profile-card" style="max-width:440px">
@@ -162,6 +179,17 @@
 
 </div>
 
+<!-- ── WIN OVERLAY ── -->
+<div id="winOverlay" class="win-overlay hidden">
+  <div class="win-modal">
+    <div class="win-badge" id="winBadge">LINE!</div>
+    <div class="win-card-id" id="winCardId"></div>
+    <table class="win-card-grid" id="winCardGrid"></table>
+    <button class="btn btn-primary" id="winDismiss">Continue watching</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
 <script src="user.js"></script>
 </body>
 </html>
