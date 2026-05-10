@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Themis Bingo</title>
+  <link rel="stylesheet" href="landing.css" />
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-ball">🎱</span>
+    <span class="brand-name">Themis Bingo</span>
+  </div>
+  <nav class="topbar-nav">
+    <a href="/user-portal" class="nav-link">My Account</a>
+    <a href="/agent-portal" class="nav-link">Agent Login</a>
+    <a href="/admin" class="nav-link nav-admin">Admin</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <h1 class="hero-title">
+      <span class="t-b">B</span><span class="t-i">I</span><span class="t-n">N</span><span class="t-g">G</span><span class="t-o">O</span>
+    </h1>
+    <p class="hero-sub">90-ball live draws · Real tickets · Instant wins</p>
+    <div class="hero-ctas">
+      <a href="/user-portal" class="btn btn-primary btn-lg">Play Now</a>
+      <a href="/special-draws" class="btn btn-outline btn-lg">View Special Draws</a>
+    </div>
+  </section>
+
+  <!-- ── Special draws ── -->
+  <section class="section">
+    <h2 class="section-title">Upcoming &amp; Live Draws</h2>
+    <div id="drawsGrid" class="draws-grid">
+      <div class="draw-skeleton"></div>
+      <div class="draw-skeleton"></div>
+      <div class="draw-skeleton"></div>
+    </div>
+  </section>
+
+  <!-- ── How it works ── -->
+  <section class="section how-section">
+    <h2 class="section-title">How It Works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">1️⃣</div>
+        <div class="step-label">Create Account</div>
+        <div class="step-desc">Register or ask your agent to set you up with points.</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-icon">🎟️</div>
+        <div class="step-label">Buy Tickets</div>
+        <div class="step-desc">Pick a draw and buy tickets with your points balance.</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-icon">🔴</div>
+        <div class="step-label">Watch Live</div>
+        <div class="step-desc">Follow the draw live — your card marks itself as numbers fall.</div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-icon">🏆</div>
+        <div class="step-label">Win Prizes</div>
+        <div class="step-desc">Line or Full House wins pay out instantly to your balance.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Portal cards ── -->
+  <section class="section">
+    <h2 class="section-title">Portals</h2>
+    <div class="portals-grid">
+      <a href="/user-portal" class="portal-card portal-player">
+        <div class="portal-icon">👤</div>
+        <div class="portal-name">Player Portal</div>
+        <div class="portal-desc">Buy tickets, check your balance, watch draws live.</div>
+      </a>
+      <a href="/agent-portal" class="portal-card portal-agent">
+        <div class="portal-icon">🤝</div>
+        <div class="portal-name">Agent Portal</div>
+        <div class="portal-desc">Manage your players, allocate points, track sales.</div>
+      </a>
+      <a href="/special-draws" class="portal-card portal-special">
+        <div class="portal-icon">⭐</div>
+        <div class="portal-name">Special Draws</div>
+        <div class="portal-desc">Browse and join one-off jackpot events.</div>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <span>© 2026 Themis Bingo · All rights reserved</span>
+</footer>
+
+<script src="landing.js"></script>
+</body>
+</html>

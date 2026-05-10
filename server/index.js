@@ -30,6 +30,7 @@ const io         = new Server(httpServer, { cors: { origin: '*' } })
 app.use(express.json())
 
 // ── Serve static panels ───────────────────────────────────────────────────
+app.use('/',             express.static(join(__dirname, '../landing')))
 app.use('/admin',        express.static(join(__dirname, '../admin')))
 app.use('/agent-portal', express.static(join(__dirname, '../agent-portal')))
 app.use('/user-portal',     express.static(join(__dirname, '../user-portal')))
