@@ -222,7 +222,7 @@ body {
 }
 
 /* ── How it works ── */
-.how-section { border-top: 1px solid var(--border); }
+.how-section { border-top: 1px solid var(--border); padding-top: 24px; }
 .steps {
   display: flex; align-items: flex-start;
   gap: 12px; flex-wrap: wrap;
