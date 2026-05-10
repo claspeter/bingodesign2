@@ -190,6 +190,7 @@ async function loadDashboard() {
   renderTopbar()
   renderOverview()
   showScreen('dashboard')
+  loadOverviewDraws()
 }
 
 function renderTopbar() {
@@ -201,6 +202,36 @@ function renderTopbar() {
   badge.textContent  = isAgent ? 'Agent User' : 'Member'
   badge.className    = `reg-badge ${isAgent ? 'rb-agent' : 'rb-self'}`
 }
+
+async function loadOverviewDraws() {
+  const listEl = document.getElementById('ovDrawsList')
+  try {
+    const { regular, special } = await apiFetch('/api/user-portal/available-draws')
+    const all = [...regular, ...special]
+    if (!all.length) {
+      listEl.innerHTML = '<div style="color:var(--muted);font-size:13px">No draws scheduled today.</div>'
+      return
+    }
+    listEl.innerHTML = all.map(d => {
+      const dot = d.status === 'running' ? '🔴' : '🟡'
+      const avail = d.available_tickets != null ? `${Number(d.available_tickets).toLocaleString()} tickets left` : 'tickets available'
+      return `<div class="prow">
+        <span>${dot} <strong>${esc(d.title)}</strong> &nbsp;<span style="color:var(--muted);font-size:12px">${avail}</span></span>
+        <span style="font-size:13px;font-weight:600">${Number(d.ticket_price).toLocaleString()} pt${d.ticket_price == 1 ? '' : 's'}</span>
+      </div>`
+    }).join('')
+  } catch {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:13px">Could not load draws.</div>'
+  }
+}
+
+document.getElementById('ovBuyBtn').addEventListener('click', () => {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
+  document.querySelector('.tab-btn[data-tab="today"]').classList.add('active')
+  document.getElementById('tab-today').classList.add('active')
+  loadTodayDraws()
+})
 
 function renderOverview() {
   document.getElementById('ovPoints').textContent = Number(profile.points ?? 0).toLocaleString()
