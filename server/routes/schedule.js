@@ -56,6 +56,51 @@ router.get('/draws', requireAuth, (req, res) => {
   res.json(rows)
 })
 
+// POST /api/schedule/generate-today — create draw instances for today from the schedule
+router.post('/generate-today', requireAuth, (req, res) => {
+  // SQLite %w = 0(Sun)…6(Sat); our schema = 0(Mon)…6(Sun)
+  const todayRow = queryOne("SELECT ((CAST(strftime('%w','now') AS INTEGER) + 6) % 7) as dow")
+  const dow = todayRow.dow
+  const todayDate = queryOne("SELECT date('now') as d").d
+
+  const schedules = query(
+    'SELECT * FROM draw_schedule WHERE day_of_week = ? AND enabled = 1',
+    [dow]
+  )
+
+  if (!schedules.length) {
+    return res.json({ ok: true, created: 0, message: 'No scheduled draws for today' })
+  }
+
+  const jackpot = queryOne('SELECT * FROM jackpot WHERE id = 1')
+  let created = 0
+  const skipped = []
+
+  for (const s of schedules) {
+    // Skip if a draw already exists for this schedule entry today
+    const existing = queryOne(
+      "SELECT id FROM draws WHERE schedule_id = ? AND draw_date = ? AND type = 'regular'",
+      [s.id, todayDate]
+    )
+    if (existing) { skipped.push(s.title); continue }
+
+    insert(
+      `INSERT INTO draws
+         (schedule_id, title, draw_date, draw_time, ball_interval, ticket_price,
+          full_house_prize, line_prize, jackpot_enabled, jackpot_amount,
+          jackpot_ball_count, timezone, type, status)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'regular','scheduled')`,
+      [s.id, s.title, todayDate, s.draw_time, s.ball_interval ?? 5,
+       s.ticket_price, s.full_house_prize, s.line_prize,
+       jackpot?.enabled ?? 0, jackpot?.amount ?? 0, jackpot?.ball_count ?? 45,
+       s.timezone ?? 'UTC']
+    )
+    created++
+  }
+
+  res.json({ ok: true, created, skipped })
+})
+
 // POST /api/schedule/draws — create draw instance
 router.post('/draws', requireAuth, (req, res) => {
   const { title, draw_date, draw_time, ball_interval, ticket_price, full_house_prize, line_prize, schedule_id, timezone } = req.body

@@ -194,6 +194,26 @@ document.getElementById('draw-modal-save').addEventListener('click', async () =>
   loadDraws()
 })
 
+document.getElementById('gen-today-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('gen-today-btn')
+  const msg = document.getElementById('gen-today-msg')
+  btn.disabled = true
+  btn.textContent = 'Generating…'
+  const res = await POST('/api/schedule/generate-today', {})
+  btn.disabled = false
+  btn.textContent = "⚡ Generate Today's Draws"
+  if (!res) return
+  msg.style.display = 'block'
+  if (res.created === 0) {
+    msg.className = 'alert alert-info'
+    msg.textContent = res.message || `All draws already exist (${res.skipped?.join(', ')})`
+  } else {
+    msg.className = 'alert alert-success'
+    msg.textContent = `✓ Created ${res.created} draw${res.created > 1 ? 's' : ''} for today${res.skipped?.length ? ` (${res.skipped.join(', ')} already existed)` : ''}`
+  }
+  setTimeout(() => { msg.style.display = 'none' }, 5000)
+})
+
 async function deleteDraw(id) {
   if (!confirm('Delete this draw?')) return
   await DELETE(`/api/schedule/${id}`)

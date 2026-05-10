@@ -62,8 +62,12 @@
             <h2 style="font-size:1.2rem;margin-bottom:4px">Weekly Draw Schedule</h2>
             <p class="text-muted">Set up recurring draws for each day of the week</p>
           </div>
-          <button class="btn btn-primary" id="add-draw-btn">＋ Add Draw</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary" id="gen-today-btn">⚡ Generate Today's Draws</button>
+            <button class="btn btn-primary" id="add-draw-btn">＋ Add Draw</button>
+          </div>
         </div>
+        <div id="gen-today-msg" style="display:none;margin-bottom:16px"></div>
         <div class="week-grid" id="week-grid"></div>
       </div>
 
