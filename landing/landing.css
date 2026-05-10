@@ -150,6 +150,8 @@ body {
   color: var(--text);
 }
 
+.section-draws { padding-top: 20px; }
+
 /* ── Draws grid ── */
 .draws-grid {
   display: grid;
