@@ -222,13 +222,22 @@ function runMigrations() {
     db.run('ALTER TABLE system_tickets ADD COLUMN winning_ticket_ids TEXT')
   }
 
-  // draws: add type and description for special draws
+  // draws: add type, description, and timezone
   const drawCols = db.exec("PRAGMA table_info(draws)")[0]?.values?.map(r => r[1]) ?? []
   if (!drawCols.includes('type')) {
     db.run("ALTER TABLE draws ADD COLUMN type TEXT DEFAULT 'regular'")
   }
   if (!drawCols.includes('description')) {
     db.run("ALTER TABLE draws ADD COLUMN description TEXT")
+  }
+  if (!drawCols.includes('timezone')) {
+    db.run("ALTER TABLE draws ADD COLUMN timezone TEXT DEFAULT 'UTC'")
+  }
+
+  // draw_schedule: add timezone
+  const schCols = db.exec("PRAGMA table_info(draw_schedule)")[0]?.values?.map(r => r[1]) ?? []
+  if (!schCols.includes('timezone')) {
+    db.run("ALTER TABLE draw_schedule ADD COLUMN timezone TEXT DEFAULT 'UTC'")
   }
 
   save()

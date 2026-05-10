@@ -28,7 +28,7 @@ router.get('/:id', (req, res) => {
 // ── POST /api/special-draws — admin creates a special draw
 router.post('/', requireAuth, (req, res) => {
   const {
-    title, description, draw_date, draw_time,
+    title, description, draw_date, draw_time, timezone = 'UTC',
     ticket_price = 1, full_house_prize = 500, line_prize = 50,
     ball_interval = 5, jackpot_enabled = 0, jackpot_amount = 0
   } = req.body
@@ -39,11 +39,11 @@ router.post('/', requireAuth, (req, res) => {
 
   const id = insert(
     `INSERT INTO draws
-       (title, description, draw_date, draw_time, ticket_price,
+       (title, description, draw_date, draw_time, timezone, ticket_price,
         full_house_prize, line_prize, ball_interval,
         jackpot_enabled, jackpot_amount, status, type)
-     VALUES (?,?,?,?,?,?,?,?,?,?,'scheduled','special')`,
-    [title, description ?? null, draw_date, draw_time,
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,'scheduled','special')`,
+    [title, description ?? null, draw_date, draw_time, timezone,
      ticket_price, full_house_prize, line_prize, ball_interval,
      jackpot_enabled ? 1 : 0, jackpot_amount]
   )
@@ -56,14 +56,14 @@ router.put('/:id', requireAuth, (req, res) => {
   if (!draw) return res.status(404).json({ error: 'Draw not found' })
 
   const {
-    title, description, draw_date, draw_time, ticket_price,
+    title, description, draw_date, draw_time, timezone, ticket_price,
     full_house_prize, line_prize, ball_interval,
     jackpot_enabled, jackpot_amount, status
   } = req.body
 
   run(
     `UPDATE draws SET
-       title=?, description=?, draw_date=?, draw_time=?,
+       title=?, description=?, draw_date=?, draw_time=?, timezone=?,
        ticket_price=?, full_house_prize=?, line_prize=?,
        ball_interval=?, jackpot_enabled=?, jackpot_amount=?, status=?
      WHERE id=?`,
@@ -72,6 +72,7 @@ router.put('/:id', requireAuth, (req, res) => {
       description ?? draw.description,
       draw_date ?? draw.draw_date,
       draw_time ?? draw.draw_time,
+      timezone ?? draw.timezone ?? 'UTC',
       ticket_price ?? draw.ticket_price,
       full_house_prize ?? draw.full_house_prize,
       line_prize ?? draw.line_prize,

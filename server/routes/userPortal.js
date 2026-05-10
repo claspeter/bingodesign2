@@ -21,7 +21,7 @@ router.get('/me', requireUserAuth, (req, res) => {
 // GET /api/user-portal/tickets
 router.get('/tickets', requireUserAuth, (req, res) => {
   const tickets = query(
-    `SELECT t.*, d.title as draw_title, d.draw_date, d.draw_time, d.status as draw_status
+    `SELECT t.*, d.title as draw_title, d.draw_date, d.draw_time, d.timezone, d.status as draw_status
      FROM tickets t
      JOIN draws d ON d.id = t.draw_id
      WHERE t.user_id = ?

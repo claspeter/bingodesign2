@@ -24,13 +24,60 @@ function showScreen(id) {
 function showErr(el, msg)  { el.textContent = msg; el.classList.remove('hidden') }
 function hideErr(el)       { el.classList.add('hidden') }
 
+// Parse a date-only string ("YYYY-MM-DD") as UTC midnight to avoid local-timezone date shift.
+function parseDateUTC(str) {
+  if (!str) return null
+  return /^\d{4}-\d{2}-\d{2}$/.test(str)
+    ? new Date(str + 'T00:00:00Z')
+    : new Date(str)
+}
+
+// Format a draw's date+time in the user's local timezone.
+// tz = IANA timezone string from the draw record (e.g. "UTC", "America/Caracas").
+function fmtDrawTime(dateStr, timeStr, tz = 'UTC') {
+  if (!dateStr || !timeStr) return '–'
+  try {
+    // Combine into a full ISO string in the draw's declared timezone
+    const iso = `${dateStr}T${timeStr}:00`
+    const d   = new Date(
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false,
+      }).format(new Date(iso)).replace(/,/, '')
+    )
+    // Re-interpret as UTC so we can display in the user's local TZ
+    // Simpler: just treat the stored strings as being in `tz` and convert
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', hour12: false,
+    }).formatToParts(new Date(`${dateStr}T${timeStr}:00Z`))
+    // Build a UTC date from the stored strings, then re-display in local TZ
+    const utcDate = new Date(`${dateStr}T${timeStr}:00Z`)
+    return utcDate.toLocaleString(undefined, {
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    }) + ' (your time)'
+  } catch {
+    return `${dateStr} ${timeStr} ${tz}`
+  }
+}
+
 function fmtDate(str) {
   if (!str) return '–'
-  return new Date(str).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' })
+  return parseDateUTC(str).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' })
 }
+
 function fmtDateTime(str) {
   if (!str) return '–'
-  return new Date(str).toLocaleString()
+  // created_at fields from SQLite datetime('now') are UTC — parse as UTC
+  const iso = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(str)
+    ? str.replace(' ', 'T') + 'Z'
+    : str
+  return new Date(iso).toLocaleString(undefined, {
+    year:'numeric', month:'short', day:'numeric',
+    hour:'2-digit', minute:'2-digit',
+  })
 }
 
 function esc(s) {
@@ -294,7 +341,7 @@ async function loadTickets() {
         return `
           <div class="bingo-ticket-wrap">
             <div class="bingo-ticket-meta">
-              <span><strong>${esc(t.draw_title)}</strong> &nbsp;·&nbsp; ${fmtDate(t.draw_date)} ${esc(t.draw_time ?? '')}</span>
+              <span><strong>${esc(t.draw_title)}</strong> &nbsp;·&nbsp; ${fmtDrawTime(t.draw_date, t.draw_time, t.timezone ?? 'UTC')}</span>
               <span style="color:${statusColor}">${esc(t.draw_status ?? t.status)}</span>
             </div>
             ${cardsHtml}
@@ -430,7 +477,7 @@ function watchTicket(ticketData) {
   document.getElementById('liveTicketPicker').classList.add('hidden')
   document.getElementById('liveTicketView').classList.remove('hidden')
   document.getElementById('liveTicketLabel').textContent =
-    `${ticketData.draw_title} — ${fmtDate(ticketData.draw_date)}`
+    `${ticketData.draw_title} — ${fmtDrawTime(ticketData.draw_date, ticketData.draw_time, ticketData.timezone ?? 'UTC')}`
 
   refreshLiveGrid()
   initSocket()

@@ -18,20 +18,20 @@ router.get('/', requireAuth, (req, res) => {
 
 // POST /api/schedule — create entry
 router.post('/', requireAuth, (req, res) => {
-  const { day_of_week, draw_time, draw_number, title, ball_interval, ticket_price, full_house_prize, line_prize } = req.body
+  const { day_of_week, draw_time, draw_number, title, ball_interval, ticket_price, full_house_prize, line_prize, timezone } = req.body
   const id = insert(
-    'INSERT INTO draw_schedule (day_of_week, draw_time, draw_number, title, ball_interval, ticket_price, full_house_prize, line_prize) VALUES (?,?,?,?,?,?,?,?)',
-    [day_of_week, draw_time, draw_number ?? 1, title, ball_interval ?? 5, ticket_price, full_house_prize, line_prize]
+    'INSERT INTO draw_schedule (day_of_week, draw_time, draw_number, title, ball_interval, ticket_price, full_house_prize, line_prize, timezone) VALUES (?,?,?,?,?,?,?,?,?)',
+    [day_of_week, draw_time, draw_number ?? 1, title, ball_interval ?? 5, ticket_price, full_house_prize, line_prize, timezone ?? 'UTC']
   )
   res.json({ id, ...req.body })
 })
 
 // PUT /api/schedule/:id — update entry
 router.put('/:id', requireAuth, (req, res) => {
-  const { draw_time, draw_number, title, ball_interval, ticket_price, full_house_prize, line_prize, enabled } = req.body
+  const { draw_time, draw_number, title, ball_interval, ticket_price, full_house_prize, line_prize, enabled, timezone } = req.body
   run(
-    'UPDATE draw_schedule SET draw_time=?, draw_number=?, title=?, ball_interval=?, ticket_price=?, full_house_prize=?, line_prize=?, enabled=? WHERE id=?',
-    [draw_time, draw_number, title, ball_interval, ticket_price, full_house_prize, line_prize, enabled ?? 1, req.params.id]
+    'UPDATE draw_schedule SET draw_time=?, draw_number=?, title=?, ball_interval=?, ticket_price=?, full_house_prize=?, line_prize=?, enabled=?, timezone=? WHERE id=?',
+    [draw_time, draw_number, title, ball_interval, ticket_price, full_house_prize, line_prize, enabled ?? 1, timezone ?? 'UTC', req.params.id]
   )
   res.json({ ok: true })
 })
@@ -58,12 +58,12 @@ router.get('/draws', requireAuth, (req, res) => {
 
 // POST /api/schedule/draws — create draw instance
 router.post('/draws', requireAuth, (req, res) => {
-  const { title, draw_date, draw_time, ball_interval, ticket_price, full_house_prize, line_prize, schedule_id } = req.body
+  const { title, draw_date, draw_time, ball_interval, ticket_price, full_house_prize, line_prize, schedule_id, timezone } = req.body
   const jackpot = queryOne('SELECT * FROM jackpot WHERE id = 1')
   const id = insert(
-    'INSERT INTO draws (schedule_id, title, draw_date, draw_time, ball_interval, ticket_price, full_house_prize, line_prize, jackpot_enabled, jackpot_amount, jackpot_ball_count) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+    'INSERT INTO draws (schedule_id, title, draw_date, draw_time, ball_interval, ticket_price, full_house_prize, line_prize, jackpot_enabled, jackpot_amount, jackpot_ball_count, timezone) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
     [schedule_id ?? null, title, draw_date, draw_time, ball_interval ?? 5, ticket_price, full_house_prize, line_prize,
-     jackpot?.enabled ?? 0, jackpot?.amount ?? 0, jackpot?.ball_count ?? 45]
+     jackpot?.enabled ?? 0, jackpot?.amount ?? 0, jackpot?.ball_count ?? 45, timezone ?? 'UTC']
   )
   res.json({ id })
 })
