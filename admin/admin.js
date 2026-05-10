@@ -103,14 +103,43 @@ document.addEventListener('click', () => profileDropdown.classList.add('hidden')
 
 document.getElementById('ddLogout').addEventListener('click', logout)
 
+// Profile modal
+const profileModal = document.getElementById('profileModal')
 document.getElementById('ddProfile').addEventListener('click', () => {
   profileDropdown.classList.add('hidden')
-  alert(`Logged in as: ${ADMIN_NAME}`)
+  document.getElementById('pmName').textContent = ADMIN_NAME
+  document.getElementById('pmAvatarBig').textContent = (ADMIN_NAME || 'A')[0].toUpperCase()
+  document.getElementById('pmCurPass').value = ''
+  document.getElementById('pmNewPass').value = ''
+  const msg = document.getElementById('pmMsg')
+  msg.className = 'pm-msg hidden'; msg.textContent = ''
+  profileModal.classList.remove('hidden')
+})
+document.getElementById('profileModalClose').addEventListener('click', () => profileModal.classList.add('hidden'))
+profileModal.addEventListener('click', e => { if (e.target === profileModal) profileModal.classList.add('hidden') })
+document.getElementById('pmSaveBtn').addEventListener('click', async () => {
+  const cur = document.getElementById('pmCurPass').value
+  const nw  = document.getElementById('pmNewPass').value
+  const msg = document.getElementById('pmMsg')
+  if (!cur || !nw) { msg.className='pm-msg err'; msg.textContent='Fill in both fields.'; return }
+  const res = await apiFetch('/api/auth/change-password', { method:'POST', body: JSON.stringify({ currentPassword: cur, newPassword: nw }) })
+  if (res) { msg.className='pm-msg ok'; msg.textContent='Password updated.'; document.getElementById('pmCurPass').value=''; document.getElementById('pmNewPass').value='' }
+  else { msg.className='pm-msg err'; msg.textContent='Incorrect current password.' }
 })
 
+// Settings modal
+const settingsModal = document.getElementById('settingsModal')
 document.getElementById('ddSettings').addEventListener('click', () => {
   profileDropdown.classList.add('hidden')
-  alert('Settings — coming soon.')
+  const msg = document.getElementById('stMsg')
+  msg.className = 'pm-msg hidden'; msg.textContent = ''
+  settingsModal.classList.remove('hidden')
+})
+document.getElementById('settingsModalClose').addEventListener('click', () => settingsModal.classList.add('hidden'))
+settingsModal.addEventListener('click', e => { if (e.target === settingsModal) settingsModal.classList.add('hidden') })
+document.getElementById('stSaveBtn').addEventListener('click', () => {
+  const msg = document.getElementById('stMsg')
+  msg.className = 'pm-msg ok'; msg.textContent = 'Settings saved.'
 })
 
 function showApp() {

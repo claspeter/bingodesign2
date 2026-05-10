@@ -674,6 +674,48 @@
 <!-- ── Toast ───────────────────────────────────────────────────────────── -->
 <div id="toast"></div>
 
+<!-- ── Profile modal ────────────────────────────────────────────────────── -->
+<div class="pm-overlay hidden" id="profileModal">
+  <div class="pm-card">
+    <div class="pm-header">
+      <h3>Profile</h3>
+      <button class="pm-close" id="profileModalClose">✕</button>
+    </div>
+    <div class="pm-avatar-row">
+      <div class="pm-avatar-big" id="pmAvatarBig">A</div>
+      <div>
+        <div class="pm-name" id="pmName"></div>
+        <div class="pm-role">Administrator</div>
+      </div>
+    </div>
+    <div class="pm-divider"></div>
+    <div class="pm-section-title">Change Password</div>
+    <div class="pm-field"><label>Current password</label><input type="password" id="pmCurPass" placeholder="••••••••" /></div>
+    <div class="pm-field"><label>New password</label><input type="password" id="pmNewPass" placeholder="Min 6 characters" /></div>
+    <div id="pmMsg" class="pm-msg hidden"></div>
+    <button class="btn-primary-sm" id="pmSaveBtn">Save Changes</button>
+  </div>
+</div>
+
+<!-- ── Settings modal ───────────────────────────────────────────────────── -->
+<div class="pm-overlay hidden" id="settingsModal">
+  <div class="pm-card">
+    <div class="pm-header">
+      <h3>Settings</h3>
+      <button class="pm-close" id="settingsModalClose">✕</button>
+    </div>
+    <div class="pm-section-title">Site</div>
+    <div class="pm-field"><label>Site name</label><input type="text" id="stSiteName" value="Bingo24-7" /></div>
+    <div class="pm-field"><label>Default ticket price (pts)</label><input type="number" id="stTicketPrice" value="1" min="1" /></div>
+    <div class="pm-divider"></div>
+    <div class="pm-section-title">Admin credentials</div>
+    <div class="pm-field"><label>Admin username</label><input type="text" id="stAdminUser" placeholder="admin" /></div>
+    <div class="pm-field"><label>New password</label><input type="password" id="stAdminPass" placeholder="Leave blank to keep current" /></div>
+    <div id="stMsg" class="pm-msg hidden"></div>
+    <button class="btn-primary-sm" id="stSaveBtn">Save Settings</button>
+  </div>
+</div>
+
 <script src="admin.js"></script>
 </body>
 </html>
