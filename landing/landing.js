@@ -5,7 +5,7 @@ async function loadDraws() {
     const data = await res.json()
 
     if (!data.length) {
-      grid.innerHTML = '<div class="no-draws">No upcoming draws at the moment — check back soon.</div>'
+      grid.innerHTML = ''
       return
     }
 
