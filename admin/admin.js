@@ -104,9 +104,12 @@ document.querySelectorAll('.nav-item').forEach(item => {
 // ══════════════════════════════════════════════════════════════════════════
 // DRAWS PANEL
 // ══════════════════════════════════════════════════════════════════════════
+let _scheduleData = []
+
 async function loadDraws() {
   const data = await GET('/api/schedule')
   if (!data) return
+  _scheduleData = data
   const grid = document.getElementById('week-grid')
   grid.innerHTML = data.map(day => `
     <div class="day-block">
@@ -146,8 +149,16 @@ let _drawEditId = null
 function openDrawModal(day, draw = null) {
   _drawEditId = draw?.id ?? null
   document.getElementById('draw-modal-title').textContent = draw ? 'Edit Draw' : 'Add Draw'
-  document.getElementById('dm-day').value          = draw?.day_of_week ?? day
-  document.getElementById('dm-number').value       = draw?.draw_number ?? 1
+  document.getElementById('dm-day').value = draw?.day_of_week ?? day
+
+  // Auto-increment: next draw number = max existing for this day + 1
+  if (draw) {
+    document.getElementById('dm-number').value = draw.draw_number
+  } else {
+    const dayDraws = _scheduleData.find(d => d.day === day)?.draws ?? []
+    const maxNum   = dayDraws.reduce((m, d) => Math.max(m, d.draw_number ?? 0), 0)
+    document.getElementById('dm-number').value = maxNum + 1
+  }
   document.getElementById('dm-time').value         = draw?.draw_time ?? '19:00'
   document.getElementById('dm-interval').value     = draw?.ball_interval ?? 5
   document.getElementById('dm-title').value        = draw?.title ?? ''
