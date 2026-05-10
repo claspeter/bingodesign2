@@ -176,6 +176,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
     btn.classList.add('active')
     document.getElementById('tab-' + btn.dataset.tab)?.classList.add('active')
+    if (btn.dataset.tab === 'today')        loadTodayDraws()
     if (btn.dataset.tab === 'tickets')      loadTickets()
     if (btn.dataset.tab === 'live')         loadLiveTab()
     if (btn.dataset.tab === 'sell')         loadSellTab()
@@ -532,6 +533,65 @@ document.getElementById('liveChangeTkt').addEventListener('click', () => {
   document.getElementById('liveTicketView').classList.add('hidden')
   loadLiveTab()
 })
+
+/* ════════════════════════════════════════════
+   TODAY'S DRAWS TAB
+   ════════════════════════════════════════════ */
+
+document.getElementById('refreshToday').addEventListener('click', loadTodayDraws)
+
+async function loadTodayDraws() {
+  const el = document.getElementById('todayList')
+  el.innerHTML = '<div class="empty-state"><div class="ei">⏳</div><p>Loading…</p></div>'
+
+  try {
+    const { regular, special } = await apiFetch('/api/user-portal/available-draws')
+
+    if (!regular.length && !special.length) {
+      el.innerHTML = '<div class="empty-state"><div class="ei">📅</div><p>No draws scheduled today</p></div>'
+      return
+    }
+
+    const renderDraw = d => {
+      const badgeCls = d.status === 'running'   ? 'badge-running'
+                     : d.status === 'scheduled' ? 'badge-scheduled'
+                     : 'badge-completed'
+      const badgeLabel = d.status === 'running'   ? '● Live'
+                       : d.status === 'scheduled' ? '⏳ Upcoming'
+                       : '✓ Completed'
+      const time = fmtDrawTime(d.draw_date, d.draw_time, d.timezone ?? 'UTC')
+      const price = Number(d.ticket_price ?? 1).toLocaleString()
+      return `
+        <div class="draw-card">
+          <div class="draw-card-info">
+            <div class="draw-card-title">${esc(d.title)}</div>
+            <div class="draw-card-meta">${esc(time)}${d.description ? ' — ' + esc(d.description) : ''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <span class="draw-card-badge ${badgeCls}">${badgeLabel}</span>
+            <span class="draw-card-price">${price} pt${price === '1' ? '' : 's'} / ticket</span>
+          </div>
+        </div>`
+    }
+
+    let html = ''
+
+    if (regular.length) {
+      html += '<div class="draw-section-label">Today\'s Scheduled Draws</div>'
+      html += regular.map(renderDraw).join('')
+    }
+
+    if (special.length) {
+      html += '<div class="draw-section-label">Special Draws</div>'
+      html += special.map(renderDraw).join('')
+    }
+
+    el.innerHTML = html
+
+  } catch (err) {
+    el.innerHTML = `<div class="empty-state"><p>Error: ${esc(err.message)}</p></div>`
+  }
+}
 
 /* ── Sell Points ── */
 function loadSellTab() {

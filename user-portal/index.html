@@ -86,6 +86,7 @@
 
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="today">Today's Draws</button>
     <button class="tab-btn" data-tab="tickets">My Tickets</button>
     <button class="tab-btn" data-tab="live">Live Draw</button>
     <button class="tab-btn" data-tab="sell">Sell Points</button>
@@ -123,6 +124,15 @@
       </div>
       <div class="prow"><span>Member since</span><span id="prSince">–</span></div>
     </div>
+  </section>
+
+  <!-- ── TODAY'S DRAWS ── -->
+  <section class="tab-panel" id="tab-today">
+    <div class="panel-header">
+      <h2>Today's Draws</h2>
+      <button class="btn btn-secondary btn-sm" id="refreshToday">↺ Refresh</button>
+    </div>
+    <div id="todayList" class="today-draws-list"></div>
   </section>
 
   <!-- ── TICKETS ── -->

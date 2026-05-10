@@ -18,6 +18,39 @@ router.get('/me', requireUserAuth, (req, res) => {
   res.json(user)
 })
 
+// GET /api/user-portal/available-draws
+// Returns today's regular scheduled draws + all upcoming/live special draws.
+// "Today" uses the draw_schedule day_of_week (0=Mon … 6=Sun).
+// SQLite strftime('%w','now') = 0=Sun,1=Mon…6=Sat  →  ((%w+6)%7) = Mon-first.
+router.get('/available-draws', requireUserAuth, (req, res) => {
+  // Today's regular draws (from draw_schedule → draws table)
+  const regular = query(
+    `SELECT d.*, 'regular' as draw_type
+     FROM draws d
+     WHERE d.type = 'regular'
+       AND d.draw_date = date('now')
+       AND d.status IN ('scheduled','running')
+     ORDER BY d.draw_time ASC`
+  )
+
+  // All upcoming + live special draws, plus today's completed specials
+  const special = query(
+    `SELECT d.*, 'special' as draw_type
+     FROM draws d
+     WHERE d.type = 'special'
+       AND (
+         d.status IN ('scheduled','running')
+         OR (d.status = 'completed' AND d.draw_date = date('now'))
+       )
+     ORDER BY
+       CASE d.status WHEN 'running' THEN 1 WHEN 'scheduled' THEN 2 ELSE 3 END,
+       d.draw_date ASC, d.draw_time ASC
+     LIMIT 50`
+  )
+
+  res.json({ regular, special })
+})
+
 // GET /api/user-portal/tickets
 router.get('/tickets', requireUserAuth, (req, res) => {
   const tickets = query(

@@ -329,6 +329,56 @@ body {
 }
 .ticket-prize { color: var(--success); font-weight: 700; font-size: 13px; }
 
+/* ── Today's Draws ── */
+.today-draws-list { display: flex; flex-direction: column; gap: 16px; }
+.draw-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 8px 0 4px;
+}
+.draw-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.draw-card-info { flex: 1; }
+.draw-card-title {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+.draw-card-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.draw-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.badge-running  { background: rgba(16,185,129,.15); color: var(--success); }
+.badge-scheduled{ background: rgba(6,182,212,.15);  color: var(--accent); }
+.badge-completed{ background: var(--surface2); color: var(--muted); }
+.draw-card-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
 /* ── Transactions ── */
 .txn-list { display: flex; flex-direction: column; gap: 8px; }
 .txn-row {

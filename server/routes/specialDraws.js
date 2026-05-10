@@ -5,15 +5,20 @@ import { requireUserAuth } from '../middleware/userAuth.js'
 
 const router = Router()
 
-// ── GET /api/special-draws — public list of upcoming + recent special draws
+// ── GET /api/special-draws — public list of relevant special draws
+// Shows: all scheduled (upcoming), any running, and completed draws from today only.
 router.get('/', (req, res) => {
   const draws = query(
     `SELECT * FROM draws
      WHERE type = 'special'
+       AND (
+         status IN ('scheduled', 'running')
+         OR (status = 'completed' AND draw_date = date('now'))
+       )
      ORDER BY
-       CASE status WHEN 'scheduled' THEN 1 WHEN 'running' THEN 2 ELSE 3 END,
+       CASE status WHEN 'running' THEN 1 WHEN 'scheduled' THEN 2 ELSE 3 END,
        draw_date ASC, draw_time ASC
-     LIMIT 20`
+     LIMIT 50`
   )
   res.json(draws)
 })
