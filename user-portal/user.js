@@ -133,7 +133,7 @@ document.getElementById('formLogin').addEventListener('submit', async e => {
     })
     TOKEN = data.token
     localStorage.setItem('userToken', TOKEN)
-    await loadDashboard()
+    window.location.href = "/"
   } catch (err2) {
     showErr(err, err2.message)
   } finally {
