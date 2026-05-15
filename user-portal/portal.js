@@ -219,15 +219,27 @@ function activateTab(name) {
 // ── Draws data ────────────────────────────────────────────────────────────
 
 let allDraws = [];
+let specialDraws = [];
+
+function drawScheduledTime(d) {
+  // API returns draw_date ("2026-05-15") and draw_time ("18:00:00") separately
+  if (d.draw_date && d.draw_time) return new Date(d.draw_date + 'T' + d.draw_time + 'Z');
+  if (d.scheduled_time) return new Date(d.scheduled_time);
+  return null;
+}
 
 async function loadDraws() {
   const { ok, data } = await apiFetch('/api/user-portal/available-draws');
-  allDraws = ok ? (Array.isArray(data) ? data : data.draws || []) : [];
+  if (!ok) { allDraws = []; specialDraws = []; }
+  else {
+    allDraws    = Array.isArray(data) ? data : (data.regular || []);
+    specialDraws = data.special || [];
+  }
 
-  // find next scheduled draw
+  // find next scheduled regular draw
   const scheduled = allDraws
     .filter(d => d.status === 'scheduled')
-    .sort((a, b) => new Date(a.scheduled_time) - new Date(b.scheduled_time));
+    .sort((a, b) => drawScheduledTime(a) - drawScheduledTime(b));
 
   nextDraw = scheduled[0] || null;
   renderCountdown();
@@ -252,14 +264,15 @@ function renderCountdown() {
     return;
   }
 
-  $('nextDrawTitle').textContent = nextDraw.name || 'Next Draw';
-  $('nextDrawTime').textContent  = new Date(nextDraw.scheduled_time).toLocaleString();
+  const st = drawScheduledTime(nextDraw);
+  $('nextDrawTitle').textContent = nextDraw.title || nextDraw.name || 'Next Draw';
+  $('nextDrawTime').textContent  = st ? st.toLocaleString() : '';
   $('nextDrawSub').textContent   = nextDraw.full_house_prize
     ? '🏆 Full house: ' + nextDraw.full_house_prize + ' pts'
     : '';
 
   function tick() {
-    const diff = new Date(nextDraw.scheduled_time) - Date.now();
+    const diff = (st ? st : drawScheduledTime(nextDraw)) - Date.now();
     if (diff <= 0) {
       ['cd-h','cd-m','cd-s'].forEach(id => $(id).textContent = '00');
       stopCountdown();
@@ -286,7 +299,7 @@ $('btnBuyFromCountdown').addEventListener('click', () => {
 // ── Special Draws ─────────────────────────────────────────────────────────
 
 function renderSpecialDraws() {
-  const specials = allDraws.filter(d => d.is_special || d.special);
+  const specials = specialDraws;
   const container = $('specialList');
 
   if (!specials.length) {
@@ -318,7 +331,8 @@ function renderBuyList() {
 }
 
 function drawCard(d, showBuy) {
-  const time  = d.scheduled_time ? new Date(d.scheduled_time).toLocaleString() : '';
+  const st    = drawScheduledTime(d);
+  const time  = st ? st.toLocaleString() : '';
   const prize = d.full_house_prize ? '🏆 ' + d.full_house_prize + ' pts' : '';
   const line  = d.line_prize       ? '🎯 Line: ' + d.line_prize + ' pts'  : '';
   const cost  = d.ticket_price ?? d.price ?? 1;
@@ -326,7 +340,7 @@ function drawCard(d, showBuy) {
 
   return `<div class="draw-card">
     <div class="dc-header">
-      <span class="dc-name">${d.name || 'Draw'}</span>
+      <span class="dc-name">${d.title || d.name || 'Draw'}</span>
       <span class="dc-badge ${statusCls}">${d.status || 'scheduled'}</span>
     </div>
     ${time ? `<div class="dc-time">🕐 ${time}</div>` : ''}
@@ -345,7 +359,7 @@ let activeBuyPrice  = 1;
 let buyQty = 1;
 
 function openBuyModal(drawId) {
-  const draw = allDraws.find(d => d.id === drawId);
+  const draw = [...allDraws, ...specialDraws].find(d => d.id === drawId);
   if (!draw) return;
 
   activeBuyDrawId = drawId;
