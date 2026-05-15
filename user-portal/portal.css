@@ -16,25 +16,31 @@
 
 body {
   font-family: 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
+  background-color: var(--bg);
+  background-image: url('/studio-bg.jpg');
+  background-size: cover;
+  background-position: 60% 45%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
-/* ── Stars ── */
-.stars {
+/* dark overlay so text stays readable over the photo */
+body::before {
+  content: '';
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background:
-    radial-gradient(1px 1px at 20% 15%, rgba(255,255,255,.55) 0%, transparent 100%),
-    radial-gradient(1px 1px at 65% 30%, rgba(255,255,255,.40) 0%, transparent 100%),
-    radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,.50) 0%, transparent 100%),
-    radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,.35) 0%, transparent 100%),
-    radial-gradient(1px 1px at 45% 55%, rgba(255,255,255,.45) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 35%  5%, rgba(255,255,255,.60) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 90% 20%, rgba(255,255,255,.50) 0%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 55% 90%, rgba(255,255,255,.45) 0%, transparent 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(8,8,18,.72) 0%,
+    rgba(8,8,18,.55) 40%,
+    rgba(8,8,18,.80) 100%
+  );
 }
+
+/* .stars div kept in HTML but hidden — no longer needed */
+.stars { display: none; }
 
 /* ── Screens ── */
 .screen { position: relative; z-index: 1; min-height: 100vh; }
