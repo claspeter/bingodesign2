@@ -109,7 +109,7 @@ $('btnRegSubmit').addEventListener('click', async () => {
   }
 
   hideModal('screen-register');
-  showToast('🎉 Account created — welcome to Bingo24-7!');
+  showToast('🎉 Account created — welcome!');
 });
 
 // ── Login ─────────────────────────────────────────────────────────────────
