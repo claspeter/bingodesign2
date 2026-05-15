@@ -3,83 +3,182 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bingo24-7</title>
-  <link rel="stylesheet" href="landing.css" />
+  <title>Bingo</title>
+  <link rel="stylesheet" href="portal.css?v=5" />
 </head>
 <body>
 
-<div class="stars" id="stars"></div>
+<div class="stars"></div>
 
-<header class="topbar">
-  <div class="brand">
-    <span class="brand-ball">🎱</span>
-    <span class="brand-name">Bingo24-7</span>
-  </div>
-  <nav class="topbar-nav">
-    <a href="/user-portal" class="nav-link">My Account</a>
-    <a href="/agent-portal" class="nav-link">Agent Login</a>
-    <a href="/admin" class="nav-link nav-admin">Admin</a>
-  </nav>
-</header>
-
-<main>
-
-  <!-- ── Hero (full viewport, studio bg) ── -->
-  <section class="hero">
+<!-- ══ HOME SCREEN ═══════════════════════════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <header class="topbar">
+    <div class="brand"><span class="brand-ball">🎱</span><span class="brand-name">Bingo</span></div>
+  </header>
+  <div class="hero">
     <div class="hero-glow"></div>
-
-    <!-- Left stage: draws panel -->
-    <div class="hero-draws">
-      <div id="drawsGrid" class="draws-grid"></div>
+    <div class="hero-content">
+<p class="hero-sub">Real draws · Live wins · Live 90-Ball Bingo</p>
+      <div class="home-btns">
+        <button class="btn btn-outline" id="btnNewCustomer">New Customer</button>
+        <button class="btn btn-primary" id="btnLogin">Login</button>
+        <button class="btn btn-accent" id="btnPlay">▶ Play Now</button>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- Bottom-centre: tagline + CTAs -->
-    <div class="hero-bottom">
-      <p class="hero-sub">90-ball live draws · Real tickets · Instant wins</p>
-      <div class="hero-ctas">
-        <a href="/user-portal?play=1" class="btn btn-primary btn-lg">Play Now</a>
-        <a href="/special-draws" class="btn btn-outline btn-lg">View Special Draws</a>
+<!-- ══ REGISTER MODAL ════════════════════════════════════════════════════ -->
+<div id="screen-register" class="modal-overlay hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="closeRegister">✕</button>
+    <div class="modal-logo">🎱 Bingo</div>
+    <h2 class="modal-title">Create Account</h2>
+    <div id="regErr" class="alert-err hidden"></div>
+    <div class="field"><label>Full Name</label>
+      <input type="text" id="regName" placeholder="Your full name" autocomplete="name" /></div>
+    <div class="field"><label>Email</label>
+      <input type="email" id="regEmail" placeholder="you@example.com" autocomplete="email" /></div>
+    <div class="field"><label>Phone <span class="opt">(optional)</span></label>
+      <input type="tel" id="regPhone" placeholder="+1 234 567 8900" /></div>
+    <div class="field"><label>Password</label>
+      <input type="password" id="regPassword" placeholder="Min 6 characters" /></div>
+    <button class="btn btn-primary btn-full" id="btnRegSubmit">Create Account</button>
+  </div>
+</div>
+
+<!-- ══ SUCCESS TOAST ═════════════════════════════════════════════════════ -->
+<div id="reg-success" class="success-toast hidden">
+  <span class="toast-icon">🎉</span>
+  <span id="reg-success-msg">Account created — welcome to Bingo!</span>
+</div>
+
+<!-- ══ LOGIN MODAL ═══════════════════════════════════════════════════════ -->
+<div id="screen-login" class="modal-overlay hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="closeLogin">✕</button>
+    <div class="modal-logo">🎱 Bingo</div>
+    <h2 class="modal-title">Sign In</h2>
+    <div id="loginErr" class="alert-err hidden"></div>
+    <div class="field"><label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" /></div>
+    <div class="field"><label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" /></div>
+    <button class="btn btn-primary btn-full" id="btnLoginSubmit">Sign In</button>
+    <p class="modal-hint">No account? <a href="#" id="switchToRegister">Create one →</a></p>
+  </div>
+</div>
+
+<!-- ══ GAME SCREEN ═══════════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen hidden">
+  <header class="topbar">
+    <div class="brand"><span class="brand-ball">🎱</span><span class="brand-name">Bingo</span></div>
+    <div class="topbar-right">
+      <div class="points-pill">💎 <span id="topPoints">0</span> pts</div>
+      <button class="profile-btn" id="profileBtn" title="Profile / Sign out">👤</button>
+    </div>
+  </header>
+
+  <!-- Profile dropdown -->
+  <div id="profileMenu" class="profile-menu hidden">
+    <div class="pm-name" id="pmName"></div>
+    <div class="pm-email" id="pmEmail"></div>
+    <hr class="pm-hr">
+    <button class="pm-item" id="btnSignOut">Sign out</button>
+  </div>
+
+  <!-- Tab nav -->
+  <nav class="game-tabs">
+    <button class="gtab active" data-tab="next-draw">⏱ Next Draw</button>
+    <button class="gtab" data-tab="special">⭐ Special Draws</button>
+    <button class="gtab" data-tab="buy">🎟 Buy Tickets</button>
+    <button class="gtab" data-tab="room">🎯 Bingo Room</button>
+  </nav>
+
+  <!-- ── NEXT DRAW ── -->
+  <section class="tab-panel active" id="tab-next-draw">
+    <div class="panel-inner">
+      <div class="countdown-card">
+        <div class="cc-label">Next Draw</div>
+        <div class="cc-title" id="nextDrawTitle">Loading…</div>
+        <div class="cc-time" id="nextDrawTime"></div>
+        <div class="countdown" id="countdown">
+          <div class="cd-unit"><span class="cd-val" id="cd-h">--</span><span class="cd-lbl">HRS</span></div>
+          <div class="cd-sep">:</div>
+          <div class="cd-unit"><span class="cd-val" id="cd-m">--</span><span class="cd-lbl">MIN</span></div>
+          <div class="cd-sep">:</div>
+          <div class="cd-unit"><span class="cd-val" id="cd-s">--</span><span class="cd-lbl">SEC</span></div>
+        </div>
+        <div class="cc-sub" id="nextDrawSub"></div>
+        <button class="btn btn-primary" id="btnBuyFromCountdown">Buy Ticket for This Draw</button>
       </div>
     </div>
   </section>
 
-  <!-- ── How it works ── -->
-  <section class="section how-section">
-    <h2 class="section-title">How It Works</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="step-icon">1️⃣</div>
-        <div class="step-label">Create Account</div>
-        <div class="step-desc">Register or ask your agent to set you up with points.</div>
-      </div>
-      <div class="step-arrow">→</div>
-      <div class="step">
-        <div class="step-icon">🎟️</div>
-        <div class="step-label">Buy Tickets</div>
-        <div class="step-desc">Pick a draw and buy tickets with your points balance.</div>
-      </div>
-      <div class="step-arrow">→</div>
-      <div class="step">
-        <div class="step-icon">🔴</div>
-        <div class="step-label">Watch Live</div>
-        <div class="step-desc">Follow the draw live — your card marks itself as numbers fall.</div>
-      </div>
-      <div class="step-arrow">→</div>
-      <div class="step">
-        <div class="step-icon">🏆</div>
-        <div class="step-label">Win Prizes</div>
-        <div class="step-desc">Line or Full House wins pay out instantly to your balance.</div>
-      </div>
+  <!-- ── SPECIAL DRAWS ── -->
+  <section class="tab-panel hidden" id="tab-special">
+    <div class="panel-inner">
+      <h2 class="panel-title">Special Draws</h2>
+      <div id="specialList"><div class="loading-state">Loading…</div></div>
     </div>
   </section>
 
+  <!-- ── BUY TICKETS ── -->
+  <section class="tab-panel hidden" id="tab-buy">
+    <div class="panel-inner">
+      <h2 class="panel-title">Buy Tickets</h2>
+      <div id="buyList"><div class="loading-state">Loading…</div></div>
+    </div>
+  </section>
 
-</main>
+  <!-- ── BINGO ROOM ── -->
+  <section class="tab-panel hidden" id="tab-room">
+    <div class="panel-inner room-panel">
+      <div class="room-card">
+        <div class="room-icon">🎯</div>
+        <h2>Enter the Bingo Room</h2>
+        <p>Watch the live draw, mark your tickets in real time and celebrate your wins.</p>
+        <a href="/bingo-room" class="btn btn-primary">Enter Bingo Room →</a>
+      </div>
+    </div>
+  </section>
+</div>
 
-<footer class="footer">
-  <span>© 2026 Bingo24-7 · All rights reserved</span>
-</footer>
+<!-- ══ GET POINTS MODAL ═══════════════════════════════════════════════════ -->
+<div id="modal-points" class="modal-overlay hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="closePoints">✕</button>
+    <div class="modal-logo">💎 Get Points</div>
+    <h2 class="modal-title">Top Up Your Balance</h2>
+    <p class="modal-body">You need more points to buy tickets. Contact your agent or administrator to add points to your account.</p>
+    <div class="points-info">
+      <div class="pi-row"><span>Current balance</span><strong id="modalPoints">0 pts</strong></div>
+    </div>
+    <button class="btn btn-primary btn-full" id="closePointsOk">Got it</button>
+  </div>
+</div>
 
-<script src="landing.js"></script>
+<!-- ══ BUY CONFIRM MODAL ═════════════════════════════════════════════════ -->
+<div id="modal-buy" class="modal-overlay hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="closeBuy">✕</button>
+    <h2 class="modal-title" id="buyModalTitle">Buy Ticket</h2>
+    <div id="buyErr" class="alert-err hidden"></div>
+    <div id="buyOk"  class="alert-ok  hidden"></div>
+    <div class="buy-row">
+      <label>Quantity</label>
+      <div class="qty-ctrl">
+        <button class="qty-btn" id="qtyDown">−</button>
+        <span id="qtyVal">1</span>
+        <button class="qty-btn" id="qtyUp">+</button>
+      </div>
+    </div>
+    <div class="buy-cost">Cost: <strong id="buyCost">1</strong> pts &nbsp;|&nbsp; Balance: <strong id="buyBal">0</strong> pts</div>
+    <button class="btn btn-primary btn-full" id="btnBuyConfirm">Confirm Purchase</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="portal.js?v=5"></script>
 </body>
 </html>
