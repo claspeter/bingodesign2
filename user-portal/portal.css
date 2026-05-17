@@ -212,22 +212,22 @@ body::before {
 @keyframes toastIn { from{transform:translateX(-50%) translateY(-20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
 .toast-icon { font-size: 20px; }
 
-/* ── Game tabs ── */
-.game-tabs {
-  display: flex; gap: 0;
-  background: var(--surface); border-bottom: 1px solid var(--border);
-  padding: 0 24px; position: sticky; top: 60px; z-index: 50;
-  overflow-x: auto;
+/* ── Section nav buttons ── */
+.section-btns {
+  display: flex; gap: 12px; justify-content: center;
+  padding: 16px 24px;
 }
-.gtab {
-  background: none; border: none; color: var(--muted);
-  font-size: 14px; font-weight: 600; cursor: pointer;
-  padding: 16px 20px; white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  transition: color .15s, border-color .15s;
+.sbtn {
+  flex: 1; max-width: 180px;
+  background: rgba(124,58,237,.12);
+  border: 1px solid rgba(124,58,237,.3);
+  color: var(--text); font-size: 14px; font-weight: 700;
+  padding: 12px 8px; border-radius: 12px; cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
 }
-.gtab:hover  { color: var(--text); }
-.gtab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.sbtn:hover  { background: rgba(124,58,237,.25); border-color: rgba(124,58,237,.5); }
+.sbtn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 
 /* ── Tab panels ── */
 .tab-panel { display: none; }

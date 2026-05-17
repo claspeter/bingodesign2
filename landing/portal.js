@@ -220,12 +220,12 @@ $('btnSignOut').addEventListener('click', () => {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 
-document.querySelectorAll('.gtab').forEach(btn => {
+document.querySelectorAll('.sbtn').forEach(btn => {
   btn.addEventListener('click', () => activateTab(btn.dataset.tab));
 });
 
 function activateTab(name) {
-  document.querySelectorAll('.gtab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.sbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.tab-panel').forEach(p => {
     p.classList.toggle('active', p.id === 'tab-' + name);
     p.classList.toggle('hidden', p.id !== 'tab-' + name);
