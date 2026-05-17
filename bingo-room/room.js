@@ -30,6 +30,7 @@ let calledSet  = new Set()
 let lineWon    = false
 let bingoWon   = false
 let _socket    = null
+let _cdTimer   = null   // next-draw countdown interval
 
 const _token = localStorage.getItem('bp_token') || ''
 
@@ -67,6 +68,45 @@ function hideWaitingBanner() {
   if (banner) banner.classList.add('hidden')
   document.getElementById('room-blocked').classList.add('hidden')
   document.querySelector('.room-layout').style.display = ''
+}
+
+function showNextDrawCountdown(nextDrawTime, nextDrawTitle) {
+  clearInterval(_cdTimer)
+  const panel      = document.getElementById('room-next-draw')
+  const titleEl    = document.getElementById('rnd-title')
+  const countEl    = document.getElementById('rnd-countdown')
+  const calledEl2  = document.getElementById('called-numbers')
+  if (!panel) return
+  if (titleEl) titleEl.textContent = nextDrawTitle || 'Upcoming Draw'
+  if (calledEl2) calledEl2.style.display = 'none'
+  panel.classList.remove('hidden')
+  statusTextEl.textContent = 'Waiting for draw'
+  liveDot.className = 'live-dot'
+
+  if (!nextDrawTime) {
+    if (countEl) countEl.textContent = '—'
+    return
+  }
+  const target = new Date(nextDrawTime).getTime()
+  function tick() {
+    const diff = Math.max(0, target - Date.now())
+    const h  = Math.floor(diff / 3_600_000)
+    const m  = Math.floor((diff % 3_600_000) / 60_000)
+    const s  = Math.floor((diff % 60_000) / 1_000)
+    if (countEl) countEl.textContent = h > 0
+      ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+      : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  }
+  tick()
+  _cdTimer = setInterval(tick, 1000)
+}
+
+function hideNextDrawCountdown() {
+  clearInterval(_cdTimer)
+  const panel     = document.getElementById('room-next-draw')
+  const calledEl2 = document.getElementById('called-numbers')
+  if (panel) panel.classList.add('hidden')
+  if (calledEl2) calledEl2.style.display = ''
 }
 
 // ── Viewport height fix ───────────────────────────────────────────────────
@@ -388,9 +428,15 @@ function connectSocket() {
     statusTextEl.textContent = 'Reconnecting…'
   })
 
-  // Initial state — detect scenario
-  socket.on('state', ({ called, gameOver }) => {
+  // Initial state on connect
+  socket.on('state', ({ called, gameOver, phase, nextDrawTime, nextDrawTitle }) => {
     calledSet = new Set(called)
+    if (phase === 'waiting') {
+      renderPlayerCard()
+      showNextDrawCountdown(nextDrawTime, nextDrawTitle)
+      return
+    }
+    // phase === 'drawing'
     if (called.length > 0 && !gameOver) {
       showDrawInProgress()
       return
@@ -398,6 +444,12 @@ function connectSocket() {
     refreshCardMarks()
     checkWins()
     if (gameOver) statusTextEl.textContent = 'Draw ended'
+  })
+
+  // Server signals waiting for next draw
+  socket.on('waiting', ({ nextDrawTime, nextDrawTitle }) => {
+    renderPlayerCard()
+    showNextDrawCountdown(nextDrawTime, nextDrawTitle)
   })
 
   // Countdown tick — update fill bar only, no visible timer
@@ -447,6 +499,8 @@ function connectSocket() {
     winBannerEl.classList.add('hidden')
     if (lastNumEl) lastNumEl.textContent = '—'
     hideWaitingBanner()
+    hideNextDrawCountdown()
+    statusTextEl.textContent = 'Draw starting…'
     renderPlayerCard()
     drum.reset(Array.from({ length: 90 }, (_, i) => i + 1))
   })

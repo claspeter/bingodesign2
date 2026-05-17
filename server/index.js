@@ -91,35 +91,86 @@ function expirePastDraws() {
 setInterval(expirePastDraws, 60_000)
 
 // ── Live draw (Socket.io) ─────────────────────────────────────────────────
-const DEFAULT_INTERVAL_MS = 5000
-const TICK_MS             = 100
+const TICK_MS = 100
 
 const game      = createGameState()
 let drawTimer   = null
 let tickTimer   = null
-let countdown   = DEFAULT_INTERVAL_MS
+let waitTimer   = null
+let gamePhase   = 'waiting'
+let currentDraw = null
 
-function getActiveBallInterval() {
-  try {
-    const draw = dbQuery(
-      `SELECT ball_interval FROM draws
-       WHERE status IN ('running','scheduled') AND ball_interval IS NOT NULL
-       ORDER BY draw_date ASC, draw_time ASC LIMIT 1`
-    )[0]
-    if (draw?.ball_interval > 0) return draw.ball_interval * 1000
-  } catch {}
-  return DEFAULT_INTERVAL_MS
+const TZ_GAME = 'Asia/Nicosia'
+function drawLocalToUtcMs(draw_date, draw_time) {
+  const t     = draw_time.length === 5 ? draw_time + ':00' : draw_time
+  const probe = new Date(`${draw_date}T${t}Z`)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ_GAME, year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false
+  }).formatToParts(probe).reduce((a, p) => { a[p.type] = p.value; return a }, {})
+  const tzDate = new Date(`${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`)
+  return probe.getTime() + (probe - tzDate)
 }
 
-function startCycle() {
-  const intervalMs = getActiveBallInterval()
+function getNextScheduledDraw() {
+  try {
+    return dbQuery(
+      `SELECT id, title, draw_date, draw_time, ball_interval FROM draws
+       WHERE status = 'scheduled'
+       ORDER BY draw_date ASC, draw_time ASC LIMIT 1`
+    )[0] ?? null
+  } catch { return null }
+}
+
+function scheduleNextDraw() {
+  clearTimeout(drawTimer)
+  clearTimeout(waitTimer)
+  clearInterval(tickTimer)
+
+  const next = getNextScheduledDraw()
+  gamePhase   = 'waiting'
+  currentDraw = next
+
+  if (!next) {
+    io.emit('waiting', { nextDrawTime: null, nextDrawTitle: null })
+    waitTimer = setTimeout(scheduleNextDraw, 60_000)
+    return
+  }
+
+  const startMs = drawLocalToUtcMs(next.draw_date, next.draw_time)
+  const delay   = startMs - Date.now()
+
+  io.emit('waiting', {
+    nextDrawTime:  new Date(startMs).toISOString(),
+    nextDrawTitle: next.title,
+  })
+
+  if (delay <= 0) {
+    startDraw(next)
+  } else {
+    waitTimer = setTimeout(() => startDraw(next), delay)
+  }
+}
+
+function startDraw(draw) {
+  clearTimeout(waitTimer)
+  const intervalMs = Math.max(2000, (draw.ball_interval ?? 5) * 1000)
+  gamePhase   = 'drawing'
+  currentDraw = draw
+  resetGame(game)
+  try { dbRun(`UPDATE draws SET status = 'running' WHERE id = ?`, [draw.id]) } catch {}
+  io.emit('game-reset')
+  drawNextBall(intervalMs, draw.id)
+}
+
+function drawNextBall(intervalMs, drawId) {
   clearTimeout(drawTimer)
   clearInterval(tickTimer)
-  countdown = intervalMs
+  let cd = intervalMs
 
   tickTimer = setInterval(() => {
-    countdown = Math.max(0, countdown - TICK_MS)
-    io.emit('countdown', { remaining: countdown / 1000, total: intervalMs / 1000 })
+    cd = Math.max(0, cd - TICK_MS)
+    io.emit('countdown', { remaining: cd / 1000, total: intervalMs / 1000 })
   }, TICK_MS)
 
   drawTimer = setTimeout(() => {
@@ -128,28 +179,43 @@ function startCycle() {
     const number = drawNumber(game)
     if (number !== null) {
       io.emit('number-drawn', { number, called: [...game.called] })
-      startCycle()
+      drawNextBall(intervalMs, drawId)
     } else {
       game.gameOver = true
+      try { dbRun(`UPDATE draws SET status = 'completed' WHERE id = ?`, [drawId]) } catch {}
       io.emit('game-over')
+      setTimeout(scheduleNextDraw, 5_000)
     }
   }, intervalMs)
 }
 
 io.on('connection', (socket) => {
-  socket.emit('state', getState(game))
+  if (gamePhase === 'waiting' && currentDraw) {
+    const startMs = drawLocalToUtcMs(currentDraw.draw_date, currentDraw.draw_time)
+    socket.emit('state', {
+      ...getState(game), phase: 'waiting',
+      nextDrawTime:  new Date(startMs).toISOString(),
+      nextDrawTitle: currentDraw.title,
+    })
+  } else if (gamePhase === 'waiting') {
+    socket.emit('state', { ...getState(game), phase: 'waiting', nextDrawTime: null, nextDrawTitle: null })
+  } else {
+    socket.emit('state', { ...getState(game), phase: 'drawing' })
+  }
 
   socket.on('bingo', () => {
     game.gameOver = true
     clearTimeout(drawTimer)
     clearInterval(tickTimer)
+    if (currentDraw) {
+      try { dbRun(`UPDATE draws SET status = 'completed' WHERE id = ?`, [currentDraw.id]) } catch {}
+    }
     io.emit('game-over')
+    setTimeout(scheduleNextDraw, 5_000)
   })
 
   socket.on('reset', () => {
-    resetGame(game)
-    startCycle()
-    io.emit('game-reset')
+    scheduleNextDraw()
   })
 })
 
@@ -157,7 +223,7 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001
 
 initDb().then(() => {
-  startCycle()
+  scheduleNextDraw()
   httpServer.listen(PORT, () => {
     console.log(`Bingo server  → http://localhost:${PORT}`)
     console.log(`Admin panel   → http://localhost:${PORT}/admin`)
