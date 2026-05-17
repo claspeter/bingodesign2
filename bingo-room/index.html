@@ -103,6 +103,12 @@
                 <span id="drum-status-text"></span><span id="drum-countdown"></span><span id="drum-status-suffix"></span>
               </div>
             </div>
+          <!-- Pre-start countdown banner (shown when draw is upcoming) -->
+          <div id="room-prestart" class="room-prestart hidden">
+            <div class="room-prestart-label">Draw starts in</div>
+            <div class="room-prestart-timer" id="room-prestart-timer">--</div>
+          </div>
+
           </div><!-- end .draw-stage -->
         </div>
       </div><!-- end .room-drum-col -->
@@ -138,6 +144,20 @@
     </div><!-- end .room-tickets-section -->
 
   </div><!-- end .room-layout -->
+
+  <!-- Draw-in-progress blocking screen -->
+  <div id="room-blocked" class="room-blocked hidden">
+    <div class="room-blocked-inner">
+      <div class="room-blocked-icon">🎯</div>
+      <h2 class="room-blocked-title">Draw in Progress</h2>
+      <p class="room-blocked-msg">This draw is currently underway.<br>Please wait for the next one.</p>
+      <div class="room-blocked-next">
+        <span class="rbn-label">Next draw is at</span>
+        <span class="rbn-time" id="room-next-time">Loading…</span>
+      </div>
+      <a href="/user-portal" class="room-blocked-btn">← Back to Portal</a>
+    </div>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="/bingo-room/room.js"></script>

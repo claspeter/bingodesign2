@@ -29,7 +29,39 @@ let paused     = false
 let calledSet  = new Set()
 let lineWon    = false
 let bingoWon   = false
-let _socket    = null   // module-level ref set in connectSocket
+let _socket    = null
+
+const _token = localStorage.getItem('bp_token') || ''
+
+async function fetchNextDrawTime() {
+  try {
+    const headers = _token ? { 'Authorization': 'Bearer ' + _token } : {}
+    const res  = await fetch('/api/user-portal/available-draws', { headers })
+    if (!res.ok) return null
+    const data = await res.json()
+    const draws = Array.isArray(data) ? data : (data.regular || [])
+    const next  = draws
+      .filter(d => d.status === 'scheduled')
+      .sort((a, b) => {
+        const ta = a.draw_date ? new Date(a.draw_date + 'T' + a.draw_time + 'Z') : new Date(a.scheduled_time)
+        const tb = b.draw_date ? new Date(b.draw_date + 'T' + b.draw_time + 'Z') : new Date(b.scheduled_time)
+        return ta - tb
+      })[0]
+    if (!next) return null
+    return next.draw_date
+      ? new Date(next.draw_date + 'T' + next.draw_time + 'Z')
+      : next.scheduled_time ? new Date(next.scheduled_time) : null
+  } catch { return null }
+}
+
+function showDrawInProgress() {
+  document.querySelector('.room-layout').style.display = 'none'
+  document.getElementById('room-blocked').classList.remove('hidden')
+  fetchNextDrawTime().then(dt => {
+    const el = document.getElementById('room-next-time')
+    if (el) el.textContent = dt ? dt.toLocaleString() : 'Check back soon'
+  })
+}
 
 // ── Viewport height fix ───────────────────────────────────────────────────
 function setVh() {
@@ -350,24 +382,38 @@ function connectSocket() {
     statusTextEl.textContent = 'Reconnecting…'
   })
 
-  // Initial state — sync already-called numbers
+  // Initial state — detect scenario
   socket.on('state', ({ called, gameOver }) => {
     calledSet = new Set(called)
+    if (called.length > 0 && !gameOver) {
+      showDrawInProgress()
+      return
+    }
     refreshCardMarks()
     checkWins()
-    if (gameOver) {
-      statusTextEl.textContent = 'Draw ended'
-    }
+    if (gameOver) statusTextEl.textContent = 'Draw ended'
   })
 
-  // Countdown tick from server
+  // Countdown tick — show pre-start banner over drum
   socket.on('countdown', ({ remaining, total }) => {
     const pct = remaining / total
     if (countdownFill) countdownFill.style.width = (pct * 100) + '%'
+    const prestartEl = document.getElementById('room-prestart')
+    const timerEl    = document.getElementById('room-prestart-timer')
+    if (prestartEl) prestartEl.classList.remove('hidden')
+    if (timerEl) {
+      const mins = Math.floor(remaining / 60)
+      const secs = remaining % 60
+      timerEl.textContent = mins > 0
+        ? `${mins}:${String(secs).padStart(2, '0')}`
+        : `${secs}s`
+    }
   })
 
-  // A number is drawn — animate the specific ball
+  // A number is drawn — hide pre-start banner, animate ball
   socket.on('number-drawn', ({ number, called }) => {
+    const prestartEl = document.getElementById('room-prestart')
+    if (prestartEl) prestartEl.classList.add('hidden')
     if (drawing || paused) return
     drawing   = true
     calledSet = new Set(called)
