@@ -67,19 +67,19 @@ router.get('/available-draws', requireUserAuth, (req, res) => {
     return new Date(probe.getTime() + offsetMs).toISOString()
   }
 
+  const nowMs = Date.now()
   const addAvail = draws => draws.map(d => {
     const utcIso = (d.draw_date && d.draw_time) ? localToUtc(d.draw_date, d.draw_time) : null
     const utcDate = utcIso ? new Date(utcIso) : null
     return {
       ...d,
-      // Override draw_date/draw_time with UTC values so any version of the portal JS works
       draw_date: utcDate ? utcDate.toISOString().slice(0, 10) : d.draw_date,
       draw_time: utcDate ? utcDate.toISOString().slice(11, 19) : d.draw_time,
       scheduled_utc: utcIso,
       available_tickets: presetTotal > 0 ? presetTotal - (soldMap[d.id] ?? 0) : null,
       total_tickets: presetTotal || null,
     }
-  })
+  }).filter(d => !d.scheduled_utc || new Date(d.scheduled_utc) > nowMs)
 
   res.json({ regular: addAvail(regular), special: addAvail(special) })
 })

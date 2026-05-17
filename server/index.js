@@ -58,6 +58,34 @@ app.use('/api/system-tickets',  systemTicketsRoutes)
 app.use('/api/import-cards',    importCardsRoutes)
 app.use('/api/preset-cards',   presetCardsRoutes)
 
+// ── Auto-expire past scheduled draws ─────────────────────────────────────
+import { query as dbQuery, run as dbRun } from './db.js'
+
+const TZ_EXPIRE = 'Asia/Nicosia'
+function expirePastDraws() {
+  try {
+    const now = new Date()
+    const scheduled = dbQuery(
+      `SELECT id, draw_date, draw_time FROM draws WHERE status = 'scheduled'`
+    )
+    for (const d of scheduled) {
+      const t = d.draw_time.length === 5 ? d.draw_time + ':00' : d.draw_time
+      const probe = new Date(`${d.draw_date}T${t}Z`)
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: TZ_EXPIRE, year:'numeric', month:'2-digit', day:'2-digit',
+        hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false
+      }).formatToParts(probe).reduce((a, p) => { a[p.type] = p.value; return a }, {})
+      const tzDate = new Date(`${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`)
+      const offsetMs = probe - tzDate
+      const utc = new Date(probe.getTime() + offsetMs)
+      if (utc <= now) {
+        dbRun(`UPDATE draws SET status = 'completed' WHERE id = ?`, [d.id])
+      }
+    }
+  } catch {}
+}
+setInterval(expirePastDraws, 60_000)
+
 // ── Live draw (Socket.io) ─────────────────────────────────────────────────
 const DRAW_INTERVAL_MS = 7000
 const TICK_MS          = 100
