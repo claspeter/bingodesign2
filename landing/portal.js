@@ -220,17 +220,23 @@ $('btnSignOut').addEventListener('click', () => {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 
-document.querySelectorAll('.sbtn').forEach(btn => {
-  btn.addEventListener('click', () => activateTab(btn.dataset.tab));
-});
-
-function activateTab(name) {
-  document.querySelectorAll('.sbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  document.querySelectorAll('.tab-panel').forEach(p => {
-    p.classList.toggle('active', p.id === 'tab-' + name);
-    p.classList.toggle('hidden', p.id !== 'tab-' + name);
+window.activateTab = function(name) {
+  document.querySelectorAll('.sbtn').forEach(b => {
+    if (b.dataset.tab === name) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
   });
-}
+  ['special', 'buy', 'room'].forEach(tab => {
+    const panel = document.getElementById('tab-' + tab);
+    if (panel) panel.style.display = (tab === name) ? 'block' : 'none';
+  });
+};
+
+document.querySelectorAll('.sbtn').forEach(btn => {
+  btn.addEventListener('click', () => window.activateTab(btn.dataset.tab));
+});
 
 // ── Draws data ────────────────────────────────────────────────────────────
 
