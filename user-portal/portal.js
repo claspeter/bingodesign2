@@ -257,9 +257,10 @@ async function loadDraws() {
     specialDraws = data.special || [];
   }
 
-  // find next scheduled regular draw
+  // find next scheduled regular draw that hasn't started yet
+  const now = Date.now();
   const scheduled = allDraws
-    .filter(d => d.status === 'scheduled')
+    .filter(d => d.status === 'scheduled' && drawScheduledTime(d) > now)
     .sort((a, b) => drawScheduledTime(a) - drawScheduledTime(b));
 
   nextDraw = scheduled[0] || null;

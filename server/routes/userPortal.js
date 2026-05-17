@@ -23,14 +23,15 @@ router.get('/me', requireUserAuth, (req, res) => {
 // "Today" uses the draw_schedule day_of_week (0=Mon … 6=Sun).
 // SQLite strftime('%w','now') = 0=Sun,1=Mon…6=Sat  →  ((%w+6)%7) = Mon-first.
 router.get('/available-draws', requireUserAuth, (req, res) => {
-  // Today's regular draws (from draw_schedule → draws table)
+  // Regular draws: today and future (not just today, so tomorrow's draws show up too)
   const regular = query(
     `SELECT d.*, 'regular' as draw_type
      FROM draws d
      WHERE d.type = 'regular'
-       AND d.draw_date = date('now')
+       AND d.draw_date >= date('now')
        AND d.status IN ('scheduled','running')
-     ORDER BY d.draw_time ASC`
+     ORDER BY d.draw_date ASC, d.draw_time ASC
+     LIMIT 30`
   )
 
   // All upcoming + live special draws, plus today's completed specials
