@@ -320,7 +320,7 @@ function renderSpecialDraws() {
   const container = $('specialList');
 
   if (!specials.length) {
-    container.innerHTML = '<div class="empty-state">No special draws available right now.</div>';
+    container.innerHTML = '<div class="no-draws-banner">No draws available right now</div>';
     return;
   }
 
