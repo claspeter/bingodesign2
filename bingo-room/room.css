@@ -243,42 +243,56 @@ body {
   width: 100%;
   max-width: 720px;
   table-layout: fixed;
+  border: 2px solid #b0a898;
 }
 .room-card-grid-table td {
-  border: 1px solid #2a2a4a;
+  border: 1px solid #c8bfb0;
   text-align: center;
-  height: 44px;
-  font-size: 16px;
+  height: 42px;
+  font-size: 15px;
   font-weight: 700;
-  color: var(--room-text);
-  transition: background .25s, color .25s;
+  background: #f5f0e8;
+  transition: background .2s, color .2s;
 }
-.room-card-grid-table td.blank  { background: #0a0a18; }
-.room-card-grid-table td.num    { background: var(--room-surface2); }
-.room-card-grid-table td.called {
-  background: #1e1e3a;
-  color: var(--room-muted);
+.room-card-grid-table td.blank   { background: #eee8dc; }
+.room-card-grid-table td.num     { background: #f5f0e8; color: #1a3a8a; }
+.room-card-grid-table td.called  {
+  background: #dbd4c8;
+  color: #9a8f80;
   text-decoration: line-through;
+  font-size: 13px;
+}
+.room-card-grid-table td.card-code-cell {
+  background: #1e3a6e;
+  color: #c8d8f8;
+  font-size: 9px;
+  font-weight: 800;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  width: 22px;
+  min-width: 22px;
+  padding: 4px 2px;
+  letter-spacing: .06em;
+  border: none;
+  border-left: 2px solid #b0a898;
 }
 .room-card-grid-table td.line-win {
-  background: rgba(16,185,129,.28);
-  color: #6ee7b7;
+  background: rgba(16,185,129,.35);
+  color: #065f46;
   font-weight: 900;
+  text-decoration: none;
 }
 .room-card-grid-table td.bingo-win {
-  background: rgba(124,58,237,.35);
-  color: #c4b5fd;
+  background: rgba(124,58,237,.45);
+  color: #3b0764;
   font-weight: 900;
+  text-decoration: none;
 }
 .card-sep-room {
-  text-align: center;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .2em;
-  color: #1e3a5f;
-  background: #0d1f30;
-  padding: 4px 0;
-  margin: 8px 0;
+  height: 14px;
+  margin: 6px 0;
+  background: linear-gradient(90deg, #2563eb, #60a5fa, #2563eb);
+  border-radius: 3px;
 }
 
 /* ── No-draw overlay on drum ── */
@@ -378,11 +392,11 @@ body {
   color: var(--room-text);
   transition: background .2s, color .2s;
 }
-.overlay-card-table td.blank   { background: #0a0a18; }
-.overlay-card-table td.num     { background: var(--room-surface2); }
-.overlay-card-table td.called  { background: #1e1e3a; color: var(--room-muted); text-decoration: line-through; }
-.overlay-card-table td.line-win  { background: rgba(16,185,129,.28); color: #6ee7b7; font-weight: 900; }
-.overlay-card-table td.bingo-win { background: rgba(124,58,237,.35); color: #c4b5fd; font-weight: 900; }
+.overlay-card-table td.blank   { background: #eee8dc; }
+.overlay-card-table td.num     { background: #f5f0e8; color: #1a3a8a; }
+.overlay-card-table td.called  { background: #dbd4c8; color: #9a8f80; text-decoration: line-through; }
+.overlay-card-table td.line-win  { background: rgba(16,185,129,.35); color: #065f46; font-weight: 900; text-decoration: none; }
+.overlay-card-table td.bingo-win { background: rgba(124,58,237,.45); color: #3b0764; font-weight: 900; text-decoration: none; }
 .overlay-card-table td.checking  { animation: cellCheck 0.4s ease forwards; font-weight: 900; }
 
 /* ── Bingo flash variant ── */

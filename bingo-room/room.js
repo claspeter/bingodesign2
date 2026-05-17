@@ -147,13 +147,16 @@ function renderPlayerCard() {
 
 function buildCardTable(card) {
   const rows = [card.row1, card.row2, card.row3]
-  const trs = rows.map(row => {
+  const trs = rows.map((row, ri) => {
     const tds = row.map(n => {
       if (n === null) return `<td class="blank"></td>`
       const cls = calledSet.has(n) ? 'called' : 'num'
       return `<td class="${cls}" data-n="${n}">${n}</td>`
     }).join('')
-    return `<tr>${tds}</tr>`
+    const codeCell = ri === 0
+      ? `<td class="card-code-cell" rowspan="3">${card.code ?? ''}</td>`
+      : ''
+    return `<tr>${tds}${codeCell}</tr>`
   }).join('')
   return `<table class="room-card-grid-table">${trs}</table>`
 }
