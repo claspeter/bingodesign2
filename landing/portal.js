@@ -222,9 +222,11 @@ $('btnSignOut').addEventListener('click', () => {
 
 window.openSection = function(name) {
   document.getElementById('game-main').style.display = 'none';
-  document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.section-panel').forEach(p => {
+    p.classList.remove('active', 'hidden');
+  });
   const panel = document.getElementById('section-' + name);
-  if (panel) panel.classList.add('active');
+  if (panel) { panel.classList.remove('hidden'); panel.classList.add('active'); }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
