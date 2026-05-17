@@ -43,13 +43,13 @@ async function fetchNextDrawTime() {
     const next  = draws
       .filter(d => d.status === 'scheduled')
       .sort((a, b) => {
-        const ta = a.draw_date ? new Date(a.draw_date + 'T' + a.draw_time + 'Z') : new Date(a.scheduled_time)
-        const tb = b.draw_date ? new Date(b.draw_date + 'T' + b.draw_time + 'Z') : new Date(b.scheduled_time)
+        const ta = a.draw_date ? new Date(a.draw_date + 'T' + a.draw_time + '+02:00') : new Date(a.scheduled_time)
+        const tb = b.draw_date ? new Date(b.draw_date + 'T' + b.draw_time + '+02:00') : new Date(b.scheduled_time)
         return ta - tb
       })[0]
     if (!next) return null
     return next.draw_date
-      ? new Date(next.draw_date + 'T' + next.draw_time + 'Z')
+      ? new Date(next.draw_date + 'T' + next.draw_time + '+02:00')
       : next.scheduled_time ? new Date(next.scheduled_time) : null
   } catch { return null }
 }
