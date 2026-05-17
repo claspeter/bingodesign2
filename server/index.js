@@ -31,7 +31,8 @@ app.use(express.json())
 
 // ── Serve static panels ───────────────────────────────────────────────────
 const noCache = { setHeaders: (res, path) => {
-  if (path.endsWith('.html')) res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
+  if (path.endsWith('.html') || path.endsWith('.js') || path.endsWith('.css'))
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
 }}
 app.use('/',             express.static(join(__dirname, '../landing'),      noCache))
 app.use('/admin',        express.static(join(__dirname, '../admin'),        noCache))
