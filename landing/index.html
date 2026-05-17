@@ -182,7 +182,33 @@
   </div>
 </div>
 
+<!-- ══ INSTALL BANNER ══════════════════════════════════════════════════════ -->
+<div id="install-banner" class="install-banner hidden">
+  <img src="/icon-192.png" class="ib-icon" alt="Bingo icon" />
+  <div class="ib-text">
+    <strong>Add to Home Screen</strong>
+    <span id="ib-sub">Play instantly — no app store needed</span>
+  </div>
+  <button class="ib-btn" id="ibInstall">Add</button>
+  <button class="ib-close" id="ibClose">✕</button>
+</div>
+
+<!-- iOS install instructions popup -->
+<div id="ios-install" class="modal-overlay hidden">
+  <div class="modal-card ios-card">
+    <button class="modal-close" id="closeIos">✕</button>
+    <img src="/icon-192.png" class="ios-icon" alt="" />
+    <h2 class="modal-title">Add to Home Screen</h2>
+    <p class="ios-steps">
+      1. Tap the <strong>Share</strong> button <span class="ios-share">⎙</span> at the bottom of your browser<br><br>
+      2. Scroll down and tap <strong>"Add to Home Screen"</strong><br><br>
+      3. Tap <strong>"Add"</strong> — done!
+    </p>
+    <button class="btn btn-primary btn-full" id="closeIosOk">Got it</button>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
-<script src="portal.js?v=5"></script>
+<script src="portal.js?v=6"></script>
 </body>
 </html>

@@ -11,7 +11,9 @@ let nextDraw = null;
 function $(id) { return document.getElementById(id); }
 
 function showModal(id) {
-  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    if (m.id !== 'ios-install') m.classList.add('hidden');
+  });
   $(id).classList.remove('hidden');
 }
 
@@ -466,4 +468,57 @@ $('closePointsOk').addEventListener('click', () => hideModal('modal-points'));
     localStorage.removeItem('bp_token');
   }
   showScreen('screen-home');
+})();
+
+// ── Install banner ────────────────────────────────────────────────────────
+
+(function () {
+  // Don't show if already installed (standalone) or dismissed within 7 days
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  const dismissed = localStorage.getItem('ib_dismissed');
+  if (isStandalone || (dismissed && Date.now() - +dismissed < 7 * 86400000)) return;
+
+  const banner  = $('install-banner');
+  const iosModal = $('ios-install');
+
+  function dismissBanner() {
+    banner.classList.add('hidden');
+    localStorage.setItem('ib_dismissed', Date.now());
+  }
+
+  $('ibClose').addEventListener('click', dismissBanner);
+  $('closeIos').addEventListener('click',   () => iosModal.classList.add('hidden'));
+  $('closeIosOk').addEventListener('click', () => iosModal.classList.add('hidden'));
+
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isInSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
+
+  if (isIos && isInSafari) {
+    // iOS Safari — show banner, tapping Add opens instruction modal
+    setTimeout(() => banner.classList.remove('hidden'), 3000);
+    $('ibInstall').addEventListener('click', () => {
+      banner.classList.add('hidden');
+      iosModal.classList.remove('hidden');
+    });
+    return;
+  }
+
+  // Android / desktop Chrome — use beforeinstallprompt
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    setTimeout(() => banner.classList.remove('hidden'), 3000);
+  });
+
+  $('ibInstall').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    dismissBanner();
+  });
+
+  window.addEventListener('appinstalled', dismissBanner);
 })();

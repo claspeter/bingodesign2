@@ -306,3 +306,42 @@ body::before {
 /* ── Loading ── */
 .loading-state { color: var(--muted); text-align: center; padding: 48px 0; font-size: 14px; }
 .empty-state   { color: var(--muted); text-align: center; padding: 48px 0; font-size: 14px; }
+
+/* ── Install banner ── */
+.install-banner {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 500; width: calc(100% - 32px); max-width: 480px;
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid rgba(124,58,237,.4);
+  border-radius: 16px; padding: 14px 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  animation: slideUp .35s ease;
+}
+.install-banner.hidden { display: none !important; }
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(80px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
+}
+.ib-icon { width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0; }
+.ib-text { flex: 1; min-width: 0; }
+.ib-text strong { display: block; font-size: 14px; font-weight: 700; }
+.ib-text span   { font-size: 12px; color: var(--muted); }
+.ib-btn {
+  background: var(--primary); color: #fff; border: none;
+  font-size: 13px; font-weight: 700; padding: 8px 18px;
+  border-radius: 20px; cursor: pointer; white-space: nowrap;
+  flex-shrink: 0;
+}
+.ib-btn:hover { background: var(--primary-h); }
+.ib-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 16px; cursor: pointer; padding: 4px; flex-shrink: 0;
+}
+.ib-close:hover { color: var(--text); }
+
+/* ── iOS install popup ── */
+.ios-card { text-align: center; }
+.ios-icon { width: 72px; height: 72px; border-radius: 16px; margin: 0 auto 16px; display: block; }
+.ios-steps { font-size: 15px; line-height: 1.7; color: var(--muted); margin-bottom: 24px; text-align: left; }
+.ios-steps strong { color: var(--text); }
+.ios-share { font-size: 18px; }
