@@ -91,22 +91,35 @@ function expirePastDraws() {
 setInterval(expirePastDraws, 60_000)
 
 // ── Live draw (Socket.io) ─────────────────────────────────────────────────
-const DRAW_INTERVAL_MS = 7000
-const TICK_MS          = 100
+const DEFAULT_INTERVAL_MS = 5000
+const TICK_MS             = 100
 
 const game      = createGameState()
 let drawTimer   = null
 let tickTimer   = null
-let countdown   = DRAW_INTERVAL_MS
+let countdown   = DEFAULT_INTERVAL_MS
+
+function getActiveBallInterval() {
+  try {
+    const draw = dbQuery(
+      `SELECT ball_interval FROM draws
+       WHERE status IN ('running','scheduled') AND ball_interval IS NOT NULL
+       ORDER BY draw_date ASC, draw_time ASC LIMIT 1`
+    )[0]
+    if (draw?.ball_interval > 0) return draw.ball_interval * 1000
+  } catch {}
+  return DEFAULT_INTERVAL_MS
+}
 
 function startCycle() {
+  const intervalMs = getActiveBallInterval()
   clearTimeout(drawTimer)
   clearInterval(tickTimer)
-  countdown = DRAW_INTERVAL_MS
+  countdown = intervalMs
 
   tickTimer = setInterval(() => {
     countdown = Math.max(0, countdown - TICK_MS)
-    io.emit('countdown', { remaining: countdown / 1000, total: DRAW_INTERVAL_MS / 1000 })
+    io.emit('countdown', { remaining: countdown / 1000, total: intervalMs / 1000 })
   }, TICK_MS)
 
   drawTimer = setTimeout(() => {
@@ -120,7 +133,7 @@ function startCycle() {
       game.gameOver = true
       io.emit('game-over')
     }
-  }, DRAW_INTERVAL_MS)
+  }, intervalMs)
 }
 
 io.on('connection', (socket) => {

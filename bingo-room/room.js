@@ -400,26 +400,14 @@ function connectSocket() {
     if (gameOver) statusTextEl.textContent = 'Draw ended'
   })
 
-  // Countdown tick — show pre-start banner over drum
+  // Countdown tick — update fill bar only, no visible timer
   socket.on('countdown', ({ remaining, total }) => {
     const pct = remaining / total
     if (countdownFill) countdownFill.style.width = (pct * 100) + '%'
-    const prestartEl = document.getElementById('room-prestart')
-    const timerEl    = document.getElementById('room-prestart-timer')
-    if (prestartEl) prestartEl.classList.remove('hidden')
-    if (timerEl) {
-      const mins = Math.floor(remaining / 60)
-      const secs = remaining % 60
-      timerEl.textContent = mins > 0
-        ? `${mins}:${String(secs).padStart(2, '0')}`
-        : `${secs}s`
-    }
   })
 
-  // A number is drawn — hide pre-start banner, animate ball
+  // A number is drawn — animate ball
   socket.on('number-drawn', ({ number, called }) => {
-    const prestartEl = document.getElementById('room-prestart')
-    if (prestartEl) prestartEl.classList.add('hidden')
     if (drawing || paused) return
     drawing   = true
     calledSet = new Set(called)
