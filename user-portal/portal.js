@@ -20,8 +20,13 @@ function showModal(id) {
 function hideModal(id) { $(id).classList.add('hidden'); }
 
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  $(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.classList.add('hidden');
+  });
+  const target = $(id);
+  target.classList.remove('hidden');
+  target.classList.add('active');
 }
 
 function showErr(elId, msg) {
