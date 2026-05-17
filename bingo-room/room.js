@@ -88,8 +88,11 @@ function showWaitingPanel(nextDrawTime, nextDrawTitle) {
     if (countEl) countEl.textContent = ''
     const subEl = panel.querySelector('.rnd-sub')
     if (subEl) subEl.textContent = 'Check back later'
+    const overlay = document.getElementById('room-nodraw-overlay')
+    if (overlay) overlay.classList.remove('hidden')
     return
   }
+  document.getElementById('room-nodraw-overlay')?.classList.add('hidden')
   const target = new Date(nextDrawTime).getTime()
   function tick() {
     const diff = Math.max(0, target - Date.now())
@@ -110,6 +113,7 @@ function hideWaitingPanel() {
   const calledEl2 = document.getElementById('called-numbers')
   if (panel) panel.classList.add('hidden')
   if (calledEl2) calledEl2.style.display = ''
+  document.getElementById('room-nodraw-overlay')?.classList.add('hidden')
 }
 
 // ── Viewport height fix ───────────────────────────────────────────────────

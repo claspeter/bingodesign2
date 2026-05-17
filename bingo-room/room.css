@@ -281,6 +281,22 @@ body {
   margin: 8px 0;
 }
 
+/* ── No-draw overlay on drum ── */
+.room-nodraw-overlay {
+  position: absolute; inset: 0; z-index: 50;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(8,8,18,.72); backdrop-filter: blur(6px);
+  border-radius: 12px; text-align: center; gap: 10px;
+}
+.room-nodraw-overlay.hidden { display: none !important; }
+.rno-title {
+  font-size: 22px; font-weight: 900; color: #fff;
+  letter-spacing: .02em;
+}
+.rno-sub {
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,.5);
+}
+
 /* ── Waiting banner (mid-draw entry) ── */
 .room-waiting-banner {
   display: flex; align-items: center; gap: 10px;
