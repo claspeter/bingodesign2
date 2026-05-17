@@ -84,7 +84,10 @@ function showWaitingPanel(nextDrawTime, nextDrawTitle) {
   liveDot.className = 'live-dot'
 
   if (!nextDrawTime) {
-    if (countEl) countEl.textContent = '—'
+    if (titleEl) titleEl.textContent = 'No draws scheduled'
+    if (countEl) countEl.textContent = ''
+    const subEl = panel.querySelector('.rnd-sub')
+    if (subEl) subEl.textContent = 'Check back later or contact your agent'
     return
   }
   const target = new Date(nextDrawTime).getTime()
