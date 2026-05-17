@@ -56,7 +56,7 @@ router.get('/available-draws', requireUserAuth, (req, res) => {
     let scheduled_utc = null
     if (d.draw_date && d.draw_time) {
       const t = d.draw_time.length === 5 ? d.draw_time + ':00' : d.draw_time
-      scheduled_utc = new Date(d.draw_date + 'T' + t + '+02:00').toISOString()
+      scheduled_utc = new Date(d.draw_date + 'T' + t + '+03:00').toISOString()
     }
     return {
       ...d,
