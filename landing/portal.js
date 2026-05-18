@@ -374,6 +374,7 @@ function drawCard(d, showBuy) {
 let activeBuyDrawId = null;
 let activeBuyPrice  = 1;
 let buyQty = 1;
+let numpadInput = '';
 
 function openBuyModal(drawId) {
   const draw = [...allDraws, ...specialDraws].find(d => d.id === drawId);
@@ -382,6 +383,7 @@ function openBuyModal(drawId) {
   activeBuyDrawId = drawId;
   activeBuyPrice  = draw.ticket_price ?? draw.price ?? 1;
   buyQty = 1;
+  numpadInput = '';
 
   const balance = currentUser.points ?? 0;
 
@@ -394,29 +396,65 @@ function openBuyModal(drawId) {
   $('buyModalTitle').textContent = 'Buy Ticket — ' + (draw.name || 'Draw');
   hideErr('buyErr');
   $('buyOk').classList.add('hidden');
+  $('buyNumpad').classList.add('hidden');
   updateBuyModal(balance);
   showModal('modal-buy');
 }
 
 function updateBuyModal(balance) {
   const bal = balance ?? currentUser.points ?? 0;
-  $('qtyVal').textContent  = buyQty;
-  $('buyCost').textContent = buyQty * activeBuyPrice;
+  $('qtyVal').textContent  = numpadInput || buyQty;
+  $('buyCost').textContent = (numpadInput ? (parseInt(numpadInput) || 0) : buyQty) * activeBuyPrice;
   $('buyBal').textContent  = bal;
 }
 
-$('qtyDown').addEventListener('click', () => {
-  if (buyQty > 1) { buyQty--; updateBuyModal(); }
+// ── Numpad toggle ──
+$('qtyDisplay').addEventListener('click', () => {
+  const pad = $('buyNumpad');
+  pad.classList.toggle('hidden');
+  if (!pad.classList.contains('hidden')) {
+    numpadInput = String(buyQty);
+    updateBuyModal();
+  }
 });
 
-$('qtyUp').addEventListener('click', () => {
+// ── Numpad button handler ──
+$('buyNumpad').addEventListener('click', e => {
+  const btn = e.target.closest('.np-btn');
+  if (!btn) return;
+  const n = btn.dataset.n;
   const max = Math.floor((currentUser.points ?? 0) / activeBuyPrice);
-  if (buyQty < Math.max(max, 1)) { buyQty++; updateBuyModal(); }
+
+  if (n === 'back') {
+    numpadInput = numpadInput.slice(0, -1);
+  } else if (n === 'ok') {
+    const val = parseInt(numpadInput) || 1;
+    buyQty = Math.min(Math.max(val, 1), Math.max(max, 1));
+    numpadInput = '';
+    $('buyNumpad').classList.add('hidden');
+  } else {
+    const next = numpadInput + n;
+    if (parseInt(next) <= 999) numpadInput = next.replace(/^0+/, '') || '0';
+  }
+  updateBuyModal();
 });
 
-$('closeBuy').addEventListener('click', () => hideModal('modal-buy'));
+$('closeBuy').addEventListener('click', () => {
+  numpadInput = '';
+  $('buyNumpad').classList.add('hidden');
+  hideModal('modal-buy');
+});
 
 $('btnBuyConfirm').addEventListener('click', async () => {
+  // Finalise any in-progress numpad entry
+  if (numpadInput) {
+    const max = Math.floor((currentUser.points ?? 0) / activeBuyPrice);
+    buyQty = Math.min(Math.max(parseInt(numpadInput) || 1, 1), Math.max(max, 1));
+    numpadInput = '';
+    $('buyNumpad').classList.add('hidden');
+    updateBuyModal();
+  }
+
   hideErr('buyErr');
   $('buyOk').classList.add('hidden');
 
@@ -453,19 +491,25 @@ $('btnBuyConfirm').addEventListener('click', async () => {
     return;
   }
 
-  // update local balance
+  // Update local balance
   if (data.remaining_points !== undefined) currentUser.points = data.remaining_points;
   else if (data.points !== undefined)      currentUser.points = data.points;
   else                                     currentUser.points = balance - cost;
 
   renderTopBar();
-  updateBuyModal();
-
-  const okEl = $('buyOk');
-  okEl.textContent = `✅ ${buyQty} ticket${buyQty > 1 ? 's' : ''} purchased!`;
-  okEl.classList.remove('hidden');
+  const purchased = buyQty;
   buyQty = 1;
-  updateBuyModal();
+  numpadInput = '';
+
+  // Close modal and return to main game page after brief success flash
+  hideModal('modal-buy');
+  closeSection();
+  // Brief toast notification
+  const toast = document.createElement('div');
+  toast.className = 'buy-toast';
+  toast.textContent = `✅ ${purchased} ticket${purchased > 1 ? 's' : ''} purchased!`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
 });
 
 // ── Get Points modal ──────────────────────────────────────────────────────

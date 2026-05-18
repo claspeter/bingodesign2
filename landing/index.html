@@ -178,10 +178,25 @@
     <div id="buyOk"  class="alert-ok  hidden"></div>
     <div class="buy-row">
       <label>Quantity</label>
-      <div class="qty-ctrl">
-        <button class="qty-btn" id="qtyDown">−</button>
+      <div class="qty-display" id="qtyDisplay">
         <span id="qtyVal">1</span>
-        <button class="qty-btn" id="qtyUp">+</button>
+        <span class="qty-caret">▼</span>
+      </div>
+    </div>
+    <div id="buyNumpad" class="buy-numpad hidden">
+      <div class="numpad-grid">
+        <button class="np-btn" data-n="1">1</button>
+        <button class="np-btn" data-n="2">2</button>
+        <button class="np-btn" data-n="3">3</button>
+        <button class="np-btn" data-n="4">4</button>
+        <button class="np-btn" data-n="5">5</button>
+        <button class="np-btn" data-n="6">6</button>
+        <button class="np-btn" data-n="7">7</button>
+        <button class="np-btn" data-n="8">8</button>
+        <button class="np-btn" data-n="9">9</button>
+        <button class="np-btn np-back" data-n="back">⌫</button>
+        <button class="np-btn" data-n="0">0</button>
+        <button class="np-btn np-ok" data-n="ok">✓</button>
       </div>
     </div>
     <div class="buy-cost">Cost: <strong id="buyCost">1</strong> pts &nbsp;|&nbsp; Balance: <strong id="buyBal">0</strong> pts</div>
