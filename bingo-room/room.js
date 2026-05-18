@@ -335,6 +335,9 @@ async function runBingoCheck(card) {
   const origTable = document.querySelectorAll('.room-card-grid-table')[cardIdx]
   const overlayRows = overlay.querySelectorAll('.overlay-card-table tr')
 
+  // Ensure call card column is visible
+  calledEl.style.display = ''
+
   for (let ri = 0; ri < 3; ri++) {
     const oTds = [...overlayRows[ri].querySelectorAll('td')]
       .filter(td => !td.classList.contains('blank') && !td.classList.contains('card-code-cell'))
@@ -343,11 +346,18 @@ async function runBingoCheck(card) {
           .filter(td => !td.classList.contains('blank') && !td.classList.contains('card-code-cell'))
       : []
     for (let i = 0; i < oTds.length; i++) {
+      const num = Number(oTds[i].dataset.n)
+      const ccCell = num ? document.querySelector(`.cc-cell[data-n="${num}"]`) : null
+
       oTds[i].classList.add('checking')
-      await new Promise(r => setTimeout(r, 320))
+      if (ccCell) ccCell.classList.add('cc-bingo-highlight')
+
+      await new Promise(r => setTimeout(r, 600))
+
       oTds[i].classList.remove('checking')
       oTds[i].className = 'bingo-win'
       if (rTds[i]) rTds[i].className = 'bingo-win'
+      if (ccCell) ccCell.classList.remove('cc-bingo-highlight')
     }
   }
 

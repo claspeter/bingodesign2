@@ -393,7 +393,18 @@ body {
 .overlay-card-table td.called  { background: #dbd4c8; color: #9a8f80; text-decoration: line-through; }
 .overlay-card-table td.line-win  { background: rgba(16,185,129,.35); color: #065f46; font-weight: 900; text-decoration: none; }
 .overlay-card-table td.bingo-win { background: rgba(124,58,237,.45); color: #3b0764; font-weight: 900; text-decoration: none; }
-.overlay-card-table td.checking  { animation: cellCheck 0.4s ease forwards; font-weight: 900; }
+.overlay-card-table td.checking  { animation: cellCheck 0.6s ease forwards; font-weight: 900; }
+
+/* call card highlight during bingo check */
+.cc-cell.cc-bingo-highlight {
+  background: #00e676 !important;
+  color: #003a1f !important;
+  box-shadow: 0 0 14px #00e676;
+  transform: scale(1.25);
+  transition: background 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  z-index: 2;
+  position: relative;
+}
 
 /* ── Bingo flash variant ── */
 #line-flash.bingo-flash {
@@ -425,12 +436,12 @@ body {
 /* ── Line-check cell animation ── */
 @keyframes cellCheck {
   0%   { transform: scale(1);    background: var(--room-surface2); color: var(--room-text); }
-  25%  { transform: scale(1.18); background: rgba(16,185,129,.75); color: #fff; box-shadow: 0 0 14px #10b981; }
-  65%  { transform: scale(1.08); background: rgba(16,185,129,.55); color: #fff; }
-  100% { transform: scale(1);    background: rgba(16,185,129,.28); color: #6ee7b7; }
+  25%  { transform: scale(1.22); background: #00e676; color: #003a1f; box-shadow: 0 0 22px #00e676, 0 0 8px #00e676; }
+  65%  { transform: scale(1.10); background: rgba(0,230,118,.65); color: #fff; }
+  100% { transform: scale(1);    background: rgba(0,230,118,.30); color: #6ee7b7; }
 }
 .room-card-grid-table td.checking {
-  animation: cellCheck 0.4s ease forwards;
+  animation: cellCheck 0.6s ease forwards;
   font-weight: 900;
   position: relative;
   z-index: 2;
