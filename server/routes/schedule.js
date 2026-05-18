@@ -45,7 +45,7 @@ router.delete('/:id', requireAuth, (req, res) => {
 // GET /api/schedule/draws — active draw instances (completed excluded unless ?status=completed)
 router.get('/draws', requireAuth, (req, res) => {
   const { status, limit = 50 } = req.query
-  const where = status ? 'WHERE d.status = ?' : "WHERE d.status != 'completed'"
+  const where = status ? 'WHERE d.status = ?' : "WHERE d.status NOT IN ('completed','voided')"
   const params = status ? [status, Number(limit)] : [Number(limit)]
   const rows = query(
     `SELECT d.*, COUNT(t.id) as ticket_count FROM draws d

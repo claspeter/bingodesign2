@@ -67,24 +67,56 @@ app.use('/api/preset-cards',   presetCardsRoutes)
 import { query as dbQuery, queryOne as dbQueryOne, run as dbRun, insert as dbInsert } from './db.js'
 
 const TZ_EXPIRE = 'Asia/Nicosia'
+
+function drawScheduledUtc(d) {
+  const t     = d.draw_time.length === 5 ? d.draw_time + ':00' : d.draw_time
+  const probe = new Date(`${d.draw_date}T${t}Z`)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ_EXPIRE, year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false
+  }).formatToParts(probe).reduce((a, p) => { a[p.type] = p.value; return a }, {})
+  const tzDate = new Date(`${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`)
+  return new Date(probe.getTime() + (probe - tzDate))
+}
+
+function voidDrawAndRefund(d) {
+  // Refund all active ticket purchases for this draw
+  const byUser = dbQuery(
+    `SELECT user_id, SUM(purchase_price) as refund FROM tickets
+     WHERE draw_id = ? AND status = 'active' GROUP BY user_id`,
+    [d.id]
+  )
+  for (const row of byUser) {
+    const user = dbQueryOne('SELECT points FROM users WHERE id = ?', [row.user_id])
+    if (!user) continue
+    const newBalance = (user.points ?? 0) + row.refund
+    dbRun('UPDATE users SET points = points + ? WHERE id = ?', [row.refund, row.user_id])
+    dbInsert(
+      'INSERT INTO transactions (user_id, type, amount, balance_after, description, draw_id) VALUES (?,?,?,?,?,?)',
+      [row.user_id, 'refund', row.refund, newBalance, `Draw "${d.title}" voided — points refunded`, d.id]
+    )
+  }
+  dbRun(`UPDATE tickets SET status = 'voided' WHERE draw_id = ? AND status = 'active'`, [d.id])
+  dbRun(`UPDATE draws SET status = 'voided' WHERE id = ?`, [d.id])
+}
+
 function expirePastDraws() {
   try {
     const now = new Date()
-    const scheduled = dbQuery(
-      `SELECT id, draw_date, draw_time FROM draws WHERE status = 'scheduled'`
-    )
+
+    // Expire scheduled draws whose time has passed
+    const scheduled = dbQuery(`SELECT id, draw_date, draw_time FROM draws WHERE status = 'scheduled'`)
     for (const d of scheduled) {
-      const t = d.draw_time.length === 5 ? d.draw_time + ':00' : d.draw_time
-      const probe = new Date(`${d.draw_date}T${t}Z`)
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: TZ_EXPIRE, year:'numeric', month:'2-digit', day:'2-digit',
-        hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false
-      }).formatToParts(probe).reduce((a, p) => { a[p.type] = p.value; return a }, {})
-      const tzDate = new Date(`${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`)
-      const offsetMs = probe - tzDate
-      const utc = new Date(probe.getTime() + offsetMs)
-      if (utc <= now) {
+      if (drawScheduledUtc(d) <= now) {
         dbRun(`UPDATE draws SET status = 'completed' WHERE id = ?`, [d.id])
+      }
+    }
+
+    // Void running draws stuck > 30 min past their scheduled time (server crash recovery)
+    const running = dbQuery(`SELECT id, title, draw_date, draw_time FROM draws WHERE status = 'running'`)
+    for (const d of running) {
+      if (now - drawScheduledUtc(d) > 30 * 60 * 1000) {
+        voidDrawAndRefund(d)
       }
     }
   } catch {}
