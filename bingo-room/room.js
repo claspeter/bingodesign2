@@ -140,8 +140,7 @@ function renderPlayerCard() {
   noTicketEl.classList.add('hidden')
   cardDrawEl.textContent = playerCards.drawTitle ?? ''
   cardGridEl.innerHTML = playerCards.cards.map((card, i) => {
-    const sep = i > 0 ? `<div class="card-sep-room">— — —</div>` : ''
-    return sep + buildCardTable(card)
+    return buildCardTable(card)
   }).join('')
 }
 
