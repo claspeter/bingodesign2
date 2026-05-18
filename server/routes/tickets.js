@@ -32,7 +32,7 @@ router.get('/winning', requireAuth, (req, res) => {
      FROM tickets t
      JOIN users u ON u.id = t.user_id
      JOIN draws d ON d.id = t.draw_id
-     WHERE t.status != 'active'
+     WHERE t.prize_amount > 0
      ORDER BY t.created_at DESC LIMIT 200`
   )
   res.json(rows)
