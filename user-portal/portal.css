@@ -94,6 +94,13 @@ body::before {
 a.pm-item { color: var(--muted); }
 .pm-item:hover { opacity: .8; }
 
+.tc-notice-line {
+  text-align: center; font-size: 12px; color: var(--muted);
+  margin-top: 14px; line-height: 1.5;
+}
+.tc-notice-line a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.tc-notice-line a:hover { text-decoration: underline; }
+
 /* ── Hero ── */
 .hero {
   display: flex; align-items: center; justify-content: center;
