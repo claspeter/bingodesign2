@@ -361,16 +361,18 @@ body {
   align-items: center;
   justify-content: center;
   gap: 20px;
-  background: rgba(3, 5, 20, 0.86);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: url('/bingo-room/win-line.png') center/cover no-repeat;
   z-index: 150;
   pointer-events: none;
+}
+#line-check-overlay.bingo-overlay {
+  background: url('/bingo-room/win-bingo.png') center/cover no-repeat;
 }
 .lco-title {
   font-size: 15px;
   font-weight: 800;
-  color: var(--room-muted);
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.8);
   text-transform: uppercase;
   letter-spacing: .12em;
 }

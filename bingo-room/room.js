@@ -321,6 +321,7 @@ async function runBingoCheck(card) {
   // ── Step 2: Card overlay on drum ─────────────────────────────────────────
   const overlay = document.createElement('div')
   overlay.id = 'line-check-overlay'
+  overlay.classList.add('bingo-overlay')
   overlay.innerHTML = `<div class="lco-title">Full house — checking card…</div>` + buildBingoOverlayTable(card)
   document.body.appendChild(overlay)
 
