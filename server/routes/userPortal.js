@@ -79,7 +79,7 @@ router.get('/available-draws', requireUserAuth, (req, res) => {
       available_tickets: presetTotal > 0 ? presetTotal - (soldMap[d.id] ?? 0) : null,
       total_tickets: presetTotal || null,
     }
-  }).filter(d => !d.scheduled_utc || new Date(d.scheduled_utc) > nowMs)
+  }).filter(d => d.status === 'running' || !d.scheduled_utc || new Date(d.scheduled_utc) > nowMs)
 
   res.json({ regular: addAvail(regular), special: addAvail(special) })
 })

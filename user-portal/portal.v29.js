@@ -407,27 +407,34 @@ async function openBuyModal(drawId) {
   showModal('modal-buy');
 }
 
+let numpadInput = '';
+
 function updateBuyModal(balance) {
   const bal = balance ?? currentUser.points ?? 0;
-  const options = [1,2,3,4,5,6,7,8,9,10,15,20,30,40,50,100];
-  if (!options.includes(buyQty)) buyQty = 1;
-  const pad = $('qtyKeypad');
-  pad.innerHTML = '';
-  options.forEach(n => {
-    const btn = document.createElement('button');
-    btn.className = 'qty-key' + (n === buyQty ? ' active' : '');
-    btn.textContent = n;
-    btn.addEventListener('click', () => {
-      buyQty = n;
-      pad.querySelectorAll('.qty-key').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      $('buyCost').textContent = buyQty * activeBuyPrice;
-    });
-    pad.appendChild(btn);
-  });
+  if (!buyQty || buyQty < 1) buyQty = 1;
+  numpadInput = String(buyQty);
+  $('qtyVal').textContent = buyQty;
   $('buyCost').textContent = buyQty * activeBuyPrice;
   $('buyBal').textContent  = bal;
 }
+
+// Numpad handler — wired once at startup
+document.getElementById('buyNumpad').addEventListener('click', e => {
+  const btn = e.target.closest('.np-btn');
+  if (!btn) return;
+  const n = btn.dataset.n;
+  if (n === 'ok') return;
+  if (n === 'back') {
+    numpadInput = numpadInput.slice(0, -1) || '0';
+  } else {
+    numpadInput = numpadInput === '0' ? n : numpadInput + n;
+  }
+  let val = Math.min(10, Math.max(1, parseInt(numpadInput) || 1));
+  if (parseInt(numpadInput) > 10) { numpadInput = '10'; val = 10; }
+  buyQty = val;
+  $('qtyVal').textContent = val;
+  $('buyCost').textContent = val * activeBuyPrice;
+});
 
 $('closeBuy').addEventListener('click', () => hideModal('modal-buy'));
 
@@ -523,11 +530,20 @@ $('btnEnterRoom').addEventListener('click', async () => {
     return;
   }
 
-  const drawId = nextDraw ? nextDraw.id : data[0].draw_id;
+  // Prefer tickets for a currently running or upcoming draw;
+  // fall back to the most recently purchased draw.
+  const { data: drawsData } = await apiFetch('/api/user-portal/available-draws');
+  const activeIds = new Set([
+    ...((drawsData?.regular) || []),
+    ...((drawsData?.special) || [])
+  ].map(d => d.id));
+
+  const activeTickets = data.filter(t => activeIds.has(t.draw_id));
+  const drawId = activeTickets.length ? activeTickets[0].draw_id : data[0].draw_id;
   const drawTickets = data.filter(t => t.draw_id === drawId);
 
   if (!drawTickets.length) {
-    alert('No tickets found for the upcoming draw.');
+    alert('No tickets found for an active draw.');
     return;
   }
 
