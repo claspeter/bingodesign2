@@ -180,7 +180,7 @@ router.post('/buy/:drawId', requireUserAuth, (req, res) => {
                WHERE t.draw_id = ? AND t.ticket_number IS NOT NULL
              )
              GROUP BY pc.ticket_number HAVING COUNT(*) = 6
-             ORDER BY pc.ticket_number ASC LIMIT 1`,
+             ORDER BY RANDOM() LIMIT 1`,
             [drawId]
           )
           if (!avail.length) throw new Error('No tickets available for this draw')
