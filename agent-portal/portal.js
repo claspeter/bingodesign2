@@ -30,9 +30,9 @@ function fmtDate(str) {
 }
 
 const TYPE_META = {
-  super_agent:  { label: 'Super Agent',  badgeClass: 'badge-super',  avatarClass: 'av-super',  icon: '👑' },
-  master_agent: { label: 'Master Agent', badgeClass: 'badge-master', avatarClass: 'av-master', icon: '⭐' },
-  agent:        { label: 'Agent',        badgeClass: 'badge-agent',  avatarClass: 'av-agent',  icon: '🤝' },
+  super:  { label: 'Super Agent',  badgeClass: 'badge-super',  avatarClass: 'av-super',  icon: '👑' },
+  master: { label: 'Master Agent', badgeClass: 'badge-master', avatarClass: 'av-master', icon: '⭐' },
+  agent:  { label: 'Agent',        badgeClass: 'badge-agent',  avatarClass: 'av-agent',  icon: '🤝' },
 }
 
 function agentMeta(type) {
@@ -161,15 +161,15 @@ document.getElementById('createPanelBack').addEventListener('click', closeCreate
 
 function configureCreateTab() {
   const type  = agentInfo.agent_type
-  const label = type === 'super_agent'  ? 'Create Master Agent'
-              : type === 'master_agent' ? 'Create Agent'
+  const label = type === 'super'  ? 'Create Master Agent'
+              : type === 'master' ? 'Create Agent'
               : 'Create Player'
 
   document.getElementById('createFormTitle').textContent = label
   document.getElementById('createBtn').textContent       = label
 
   document.getElementById('commissionField').style.display =
-    type === 'agent' ? 'none' : ''
+    type === 'agent' ? 'none' : ''   // agents create players (no commission)
 
   document.getElementById('createBalanceHint').textContent =
     (agentInfo.points ?? 0).toLocaleString()
@@ -371,7 +371,7 @@ function loadSellTab() {
 
   // We'll check for parent existence at submit time — show a hint
   const info = document.getElementById('sellParentInfo')
-  if (agentInfo?.agent_type === 'super_agent') {
+  if (agentInfo?.agent_type === 'super') {
     info.textContent = 'As a Super Agent you have no parent — contact admin to redeem points.'
     document.getElementById('sellBtn').disabled = true
   } else {

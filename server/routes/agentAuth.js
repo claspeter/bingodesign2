@@ -6,7 +6,7 @@ import { AGENT_JWT_SECRET } from '../middleware/agentAuth.js'
 
 const router = Router()
 
-const TYPE_LABELS = { super_agent: 'Super Agent', master_agent: 'Master Agent', agent: 'Agent' }
+const TYPE_LABELS = { super: 'Super Agent', master: 'Master Agent', agent: 'Agent' }
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body

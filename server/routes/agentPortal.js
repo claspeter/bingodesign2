@@ -7,9 +7,9 @@ const router = Router()
 
 // What each type can create
 const CAN_CREATE = {
-  super_agent:  { type: 'master_agent', role: 'master_agent', agent_type: 'master' },
-  master_agent: { type: 'agent',        role: 'agent',        agent_type: 'agent'  },
-  agent:        null, // agents create users, not sub-agents
+  super:  { type: 'master', role: 'master_agent', agent_type: 'master' },
+  master: { type: 'agent',  role: 'agent',        agent_type: 'agent'  },
+  agent:  null, // agents create users, not sub-agents
 }
 
 // ── GET /api/agent-portal/me ──────────────────────────────────────────────
