@@ -44,6 +44,7 @@ app.use('/agent-portal', express.static(join(__dirname, '../agent-portal'), noCa
 app.use('/user-portal',     express.static(join(__dirname, '../user-portal'),  noCache))
 app.use('/special-draws',   express.static(join(__dirname, '../special-draws'),noCache))
 app.use('/bingo-room',      express.static(join(__dirname, '../bingo-room'),   noCache))
+app.use('/terms',           express.static(join(__dirname, '../terms'),         noCache))
 
 // ── API routes ────────────────────────────────────────────────────────────
 app.use('/api/auth',         authRoutes)
