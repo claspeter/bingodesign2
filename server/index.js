@@ -251,18 +251,13 @@ function drawNextBall(intervalMs, drawId) {
     const number = drawNumber(game)
     if (number !== null) {
       io.emit('number-drawn', { number, called: [...game.called] })
-      const bingoWon = checkWins(drawId, currentDraw)
-      if (bingoWon) {
-        game.gameOver = true
-        try { dbRun(`UPDATE draws SET status = 'completed' WHERE id = ?`, [drawId]) } catch {}
-        setTimeout(() => { io.emit('game-over'); setTimeout(scheduleNextDraw, 5_000) }, 3_000)
-      } else {
-        drawNextBall(intervalMs, drawId)
-      }
+      drawNextBall(intervalMs, drawId)
     } else {
+      // All balls drawn — end draw then credit prizes
       game.gameOver = true
       try { dbRun(`UPDATE draws SET status = 'completed' WHERE id = ?`, [drawId]) } catch {}
       io.emit('game-over')
+      checkWins(drawId, currentDraw)
       setTimeout(scheduleNextDraw, 5_000)
     }
   }, intervalMs)
@@ -283,11 +278,13 @@ io.on('connection', (socket) => {
   }
 
   socket.on('bingo', () => {
+    if (game.gameOver) return
     game.gameOver = true
     clearTimeout(drawTimer)
     clearInterval(tickTimer)
     if (currentDraw) {
       try { dbRun(`UPDATE draws SET status = 'completed' WHERE id = ?`, [currentDraw.id]) } catch {}
+      checkWins(currentDraw.id, currentDraw)
     }
     io.emit('game-over')
     setTimeout(scheduleNextDraw, 5_000)
