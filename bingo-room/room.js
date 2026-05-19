@@ -401,10 +401,16 @@ function showDrawResultsCard({ drawTitle, lineWinner, bingoWinner }) {
     { opacity: 0, y: 40 },
     { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }
   )
-  // Auto-dismiss after 12 seconds
+  // Auto-dismiss after 12 seconds, then clear this draw's tickets
   setTimeout(() => {
     gsap.to(card, { opacity: 0, y: -20, duration: 0.5, ease: 'power2.in',
-      onComplete: () => card.remove() })
+      onComplete: () => {
+        card.remove()
+        sessionStorage.removeItem('bingoRoomTicket')
+        playerCards = null
+        renderPlayerCard()   // shows the "no ticket" state
+      }
+    })
   }, 12000)
 }
 
@@ -633,8 +639,10 @@ function connectSocket() {
     bingoWon   = false
     drawing    = false
     paused     = false
+    _drawResults = null
     winBannerEl.classList.add('hidden')
     if (lastNumEl) lastNumEl.textContent = '—'
+    callCard.reset()
     hideWaitingBanner()
     hideWaitingPanel()
     statusTextEl.textContent = 'Draw starting…'
