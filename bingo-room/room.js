@@ -512,6 +512,13 @@ function showWin(text, type) {
   winBannerEl.classList.remove('hidden')
 }
 
+// ── Orientation lock (Android Chrome); CSS overlay handles iOS fallback ──
+;(async () => {
+  try {
+    if (screen.orientation?.lock) await screen.orientation.lock('landscape')
+  } catch (_) { /* iOS/unsupported — rotate overlay shown via CSS */ }
+})()
+
 // ── Boot drum ─────────────────────────────────────────────────────────────
 setTimeout(() => {
   drum.init(Array.from({ length: 90 }, (_, i) => i + 1))
