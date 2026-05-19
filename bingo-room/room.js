@@ -380,6 +380,55 @@ async function runBingoCheck(card) {
 
 }
 
+// Played on every client that did NOT win — shows the flash + checking overlay
+async function runRemoteWinCeremony(type, amount) {
+  paused = true
+
+  const flash = document.createElement('div')
+  flash.id = 'line-flash'
+  if (type === 'bingo') flash.classList.add('bingo-flash')
+  flash.textContent = type === 'bingo' ? 'BINGO!' : 'LINE!'
+  document.body.appendChild(flash)
+
+  await new Promise(r =>
+    gsap.fromTo(flash,
+      { opacity: 0, scale: 0.5 },
+      { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(1.6)', onComplete: r }
+    )
+  )
+  announcer.sayText(type === 'bingo' ? 'BINGO!' : 'LINE!')
+  await new Promise(r => setTimeout(r, 1800))
+  await new Promise(r =>
+    gsap.to(flash, { opacity: 0, scale: 1.25, duration: 0.3, ease: 'power2.in',
+      onComplete: () => { flash.remove(); r() } })
+  )
+
+  const prizeText = amount > 0 ? ` — ${amount} pts` : ''
+  const overlay = document.createElement('div')
+  overlay.id = 'line-check-overlay'
+  if (type === 'bingo') overlay.classList.add('bingo-overlay')
+  overlay.innerHTML = `<div class="lco-title">${type === 'bingo' ? 'Full house' : 'Line won'}${prizeText}<br>Checking winner's card…</div>`
+  document.body.appendChild(overlay)
+
+  gsap.fromTo(overlay, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' })
+
+  const holdMs = type === 'bingo' ? 9000 : 3500
+  await new Promise(r => setTimeout(r, holdMs))
+
+  showWin(type === 'bingo'
+    ? (amount > 0 ? `BINGO! +${amount} pts` : 'BINGO!')
+    : (amount > 0 ? `LINE! +${amount} pts` : 'LINE!'), type)
+
+  await new Promise(r => setTimeout(r, 1200))
+  await new Promise(r =>
+    gsap.to(overlay, { opacity: 0, y: -30, duration: 0.5, ease: 'power2.in',
+      onComplete: () => { overlay.remove(); r() } })
+  )
+
+  if (type === 'line') announcer.sayText('Continuing.', () => { paused = false })
+  else paused = false
+}
+
 function showNextDrawCountdown(seconds) {
   const el = document.createElement('div')
   el.id = 'bingo-next-draw'
@@ -516,14 +565,14 @@ function connectSocket() {
   socket.on('prize-awarded', ({ type, amount }) => {
     if (type === 'line') {
       lineWon = true   // stop every client from triggering a second line
+      // Local ceremony already running on the winner — show remote version on everyone else
       if (!document.getElementById('line-flash')) {
-        // only show the banner if the local ceremony isn't already running
-        showWin(amount > 0 ? `LINE! +${amount} pts` : 'LINE!', 'line')
+        runRemoteWinCeremony('line', amount)
       }
     } else if (type === 'bingo') {
       bingoWon = true
       if (!document.getElementById('line-flash')) {
-        showWin(amount > 0 ? `BINGO! +${amount} pts` : 'BINGO!', 'bingo')
+        runRemoteWinCeremony('bingo', amount)
       }
     }
   })
