@@ -334,6 +334,17 @@ async function deleteDrawInstance(id) {
 // ══════════════════════════════════════════════════════════════════════════
 // TICKETS PANEL
 // ══════════════════════════════════════════════════════════════════════════
+let _ticketPeriod = 'today'
+
+document.getElementById('ticket-period-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.period-tab')
+  if (!btn) return
+  document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  _ticketPeriod = btn.dataset.period
+  loadTickets()
+})
+
 async function loadTickets() {
   const status  = document.getElementById('ticket-filter').value
   const paidOut = document.getElementById('ticket-paid-filter').value
@@ -343,8 +354,23 @@ async function loadTickets() {
   if (paidOut !== '') params.set('paid_out', paidOut)
   if ([...params].length) url += '?' + params
 
-  const data = await GET(url)
+  let data = await GET(url)
   if (!data) return
+
+  // Period filter
+  if (_ticketPeriod !== 'all') {
+    const now   = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const weekStart = new Date(today)
+    weekStart.setDate(today.getDate() - today.getDay())
+    data = data.filter(t => {
+      const d = new Date(t.draw_date || t.created_at)
+      if (_ticketPeriod === 'today') return d >= today
+      if (_ticketPeriod === 'week')  return d >= weekStart
+      return true
+    })
+  }
+
   const tbody = document.getElementById('tickets-tbody')
   if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No winning tickets found</td></tr>'; return }
   tbody.innerHTML = data.map(t => `

@@ -100,7 +100,7 @@
 
       <!-- ── TICKETS ────────────────────────────────────────────────── -->
       <div class="panel" id="panel-tickets">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
           <div>
             <h2 style="font-size:1.2rem;margin-bottom:4px">Winning Tickets</h2>
             <p class="text-muted">All line and full house winners</p>
@@ -118,6 +118,11 @@
               <option value="1">Paid Out</option>
             </select>
           </div>
+        </div>
+        <div class="period-tabs" id="ticket-period-tabs">
+          <button class="period-tab active" data-period="today">Today</button>
+          <button class="period-tab" data-period="week">This Week</button>
+          <button class="period-tab" data-period="all">All</button>
         </div>
         <div class="table-wrap">
           <table>
