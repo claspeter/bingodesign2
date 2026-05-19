@@ -94,12 +94,14 @@ body::before {
 a.pm-item { color: var(--muted); }
 .pm-item:hover { opacity: .8; }
 
-.tc-notice-line {
-  text-align: center; font-size: 12px; color: var(--muted);
-  margin-top: 14px; line-height: 1.5;
+.tc-check-row {
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px 0 10px; font-size: 13px; color: var(--muted);
 }
-.tc-notice-line a { color: var(--accent); text-decoration: none; font-weight: 600; }
-.tc-notice-line a:hover { text-decoration: underline; }
+.tc-check-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); flex-shrink: 0; cursor: pointer; }
+.tc-check-row label { cursor: pointer; line-height: 1.4; }
+.tc-check-row a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.tc-check-row a:hover { text-decoration: underline; }
 
 /* ── Hero ── */
 .hero {
