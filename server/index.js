@@ -310,6 +310,39 @@ io.on('connection', (socket) => {
     socket.emit('state', { ...getState(game), phase: 'drawing' })
   }
 
+  socket.on('line', () => {
+    if (!currentDraw || linePrizeAwarded || game.gameOver) return
+    const drawId = currentDraw.id
+    const draw   = currentDraw
+    const called = new Set(game.called)
+    try {
+      const tickets = dbQuery(
+        "SELECT id, user_id, numbers FROM tickets WHERE draw_id = ? AND status = 'active'",
+        [drawId]
+      )
+      for (const ticket of tickets) {
+        if (linePrizeAwarded) break
+        const cards = JSON.parse(ticket.numbers)
+        for (const card of cards) {
+          const rows = [card.row1, card.row2, card.row3]
+          for (const row of rows) {
+            const nums = row.filter(n => n !== null)
+            if (nums.length && nums.every(n => called.has(n))) {
+              linePrizeAwarded = true
+              const prize = draw.line_prize ?? 0
+              if (prize > 0) awardPrize(ticket.user_id, drawId, ticket.id, prize, 'LINE win')
+              io.emit('prize-awarded', { type: 'line', user_id: ticket.user_id, amount: prize })
+              console.log(`LINE win — user ${ticket.user_id}, prize ${prize}`)
+              return
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Line check error:', e)
+    }
+  })
+
   socket.on('bingo', () => {
     if (game.gameOver) return
     game.gameOver = true

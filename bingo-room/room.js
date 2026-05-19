@@ -176,6 +176,7 @@ function checkWins() {
         const nums = rows[ri].filter(n => n !== null)
         if (nums.every(n => calledSet.has(n))) {
           lineWon = true
+          _socket?.emit('line')
           runLineCheck(card, ri)
           return
         }
@@ -509,6 +510,22 @@ function connectSocket() {
   socket.on('game-over', () => {
     statusTextEl.textContent = 'Draw complete'
     if (countdownFill) countdownFill.style.width = '0'
+  })
+
+  // Broadcast prize announcements to ALL connected clients
+  socket.on('prize-awarded', ({ type, amount }) => {
+    if (type === 'line') {
+      lineWon = true   // stop every client from triggering a second line
+      if (!document.getElementById('line-flash')) {
+        // only show the banner if the local ceremony isn't already running
+        showWin(amount > 0 ? `LINE! +${amount} pts` : 'LINE!', 'line')
+      }
+    } else if (type === 'bingo') {
+      bingoWon = true
+      if (!document.getElementById('line-flash')) {
+        showWin(amount > 0 ? `BINGO! +${amount} pts` : 'BINGO!', 'bingo')
+      }
+    }
   })
 
   socket.on('game-reset', () => {
