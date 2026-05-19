@@ -158,6 +158,8 @@ function getNextScheduledDraw() {
 // ── Per-draw win state ────────────────────────────────────────────────────
 let linePrizeAwarded  = false
 let bingoPrizeAwarded = false
+let lineWinnerEmail   = null
+let bingoWinnerEmail  = null
 
 function awardPrize(userId, drawId, ticketId, amount, description) {
   try {
@@ -199,6 +201,8 @@ function checkWins(drawId, draw) {
               linePrizeAwarded = true
               const prize = draw.line_prize ?? 0
               if (prize > 0) awardPrize(ticket.user_id, drawId, ticket.id, prize, 'LINE win')
+              const lu = dbQueryOne('SELECT email FROM users WHERE id = ?', [ticket.user_id])
+              lineWinnerEmail = lu?.email ?? null
               io.emit('prize-awarded', { type: 'line', user_id: ticket.user_id, amount: prize })
               console.log(`LINE win — user ${ticket.user_id}, prize ${prize}`)
               break
@@ -211,6 +215,8 @@ function checkWins(drawId, draw) {
           bingoPrizeAwarded = true
           const prize = draw.full_house_prize ?? 0
           if (prize > 0) awardPrize(ticket.user_id, drawId, ticket.id, prize, 'BINGO win')
+          const bu = dbQueryOne('SELECT email FROM users WHERE id = ?', [ticket.user_id])
+          bingoWinnerEmail = bu?.email ?? null
           io.emit('prize-awarded', { type: 'bingo', user_id: ticket.user_id, amount: prize })
           console.log(`BINGO win — user ${ticket.user_id}, prize ${prize}`)
           bingoTriggered = true
@@ -262,6 +268,8 @@ function startDraw(draw) {
   currentDraw = draw
   linePrizeAwarded  = false
   bingoPrizeAwarded = false
+  lineWinnerEmail   = null
+  bingoWinnerEmail  = null
   resetGame(game)
   try { dbRun(`UPDATE draws SET status = 'running' WHERE id = ?`, [draw.id]) } catch {}
   io.emit('game-reset')
@@ -286,11 +294,16 @@ function drawNextBall(intervalMs, drawId) {
       io.emit('number-drawn', { number, called: [...game.called] })
       drawNextBall(intervalMs, drawId)
     } else {
-      // All balls drawn — end draw then credit prizes
+      // All balls drawn — check wins first so winner emails are set, then broadcast
       game.gameOver = true
       try { dbRun(`UPDATE draws SET status = 'completed' WHERE id = ?`, [drawId]) } catch {}
-      io.emit('game-over')
       checkWins(drawId, currentDraw)
+      io.emit('game-over')
+      io.emit('draw-results', {
+        drawTitle:   currentDraw?.title ?? '',
+        lineWinner:  lineWinnerEmail,
+        bingoWinner: bingoWinnerEmail,
+      })
       setTimeout(scheduleNextDraw, 5_000)
     }
   }, intervalMs)
@@ -331,6 +344,8 @@ io.on('connection', (socket) => {
               linePrizeAwarded = true
               const prize = draw.line_prize ?? 0
               if (prize > 0) awardPrize(ticket.user_id, drawId, ticket.id, prize, 'LINE win')
+              const lu2 = dbQueryOne('SELECT email FROM users WHERE id = ?', [ticket.user_id])
+              lineWinnerEmail = lu2?.email ?? null
               io.emit('prize-awarded', { type: 'line', user_id: ticket.user_id, amount: prize })
               console.log(`LINE win — user ${ticket.user_id}, prize ${prize}`)
               return
@@ -353,6 +368,11 @@ io.on('connection', (socket) => {
       checkWins(currentDraw.id, currentDraw)
     }
     io.emit('game-over')
+    io.emit('draw-results', {
+      drawTitle:   currentDraw?.title ?? '',
+      lineWinner:  lineWinnerEmail,
+      bingoWinner: bingoWinnerEmail,
+    })
     setTimeout(scheduleNextDraw, 5_000)
   })
 

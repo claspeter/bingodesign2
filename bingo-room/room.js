@@ -27,10 +27,11 @@ const announcer = new Announcer()
 let drawing    = false
 let paused     = false
 let calledSet  = new Set()
-let lineWon    = false
-let bingoWon   = false
-let _socket    = null
-let _cdTimer   = null   // next-draw countdown interval
+let lineWon       = false
+let bingoWon      = false
+let _socket       = null
+let _cdTimer      = null   // next-draw countdown interval
+let _drawResults  = null   // stored until ceremony ends
 
 const _token = localStorage.getItem('bp_token') || ''
 
@@ -378,6 +379,40 @@ async function runBingoCheck(card) {
     gsap.to(overlay, { opacity: 0, y: -30, duration: 0.5, ease: 'power2.in', onComplete: () => { overlay.remove(); r() } })
   )
 
+  tryShowDrawResults()
+}
+
+// ── Draw results card ─────────────────────────────────────────────────────
+
+function showDrawResultsCard({ drawTitle, lineWinner, bingoWinner }) {
+  const existing = document.getElementById('draw-results-card')
+  if (existing) existing.remove()
+
+  const card = document.createElement('div')
+  card.id = 'draw-results-card'
+  card.innerHTML = `
+    <div class="drc-title">Draw Results</div>
+    <div class="drc-draw">${drawTitle || 'Draw'}</div>
+    <div class="drc-row"><span class="drc-label">Line</span><span class="drc-email">${lineWinner || '—'}</span></div>
+    <div class="drc-row"><span class="drc-label">Bingo</span><span class="drc-email">${bingoWinner || '—'}</span></div>
+  `
+  document.body.appendChild(card)
+  gsap.fromTo(card,
+    { opacity: 0, y: 40 },
+    { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }
+  )
+  // Auto-dismiss after 12 seconds
+  setTimeout(() => {
+    gsap.to(card, { opacity: 0, y: -20, duration: 0.5, ease: 'power2.in',
+      onComplete: () => card.remove() })
+  }, 12000)
+}
+
+function tryShowDrawResults() {
+  if (_drawResults) {
+    showDrawResultsCard(_drawResults)
+    _drawResults = null
+  }
 }
 
 // Played on every client that did NOT win — shows the flash + checking overlay
@@ -426,7 +461,7 @@ async function runRemoteWinCeremony(type, amount) {
   )
 
   if (type === 'line') announcer.sayText('Continuing.', () => { paused = false })
-  else paused = false
+  else { paused = false; tryShowDrawResults() }
 }
 
 function showNextDrawCountdown(seconds) {
@@ -559,6 +594,14 @@ function connectSocket() {
   socket.on('game-over', () => {
     statusTextEl.textContent = 'Draw complete'
     if (countdownFill) countdownFill.style.width = '0'
+  })
+
+  socket.on('draw-results', (data) => {
+    _drawResults = data
+    // Clients with no ceremony (no ticket or spectators) show results after a short delay
+    if (!playerCards?.cards?.length) {
+      setTimeout(() => tryShowDrawResults(), 3000)
+    }
   })
 
   // Broadcast prize announcements to ALL connected clients
