@@ -176,7 +176,7 @@ async function loadDraws() {
         ${day.draws.length === 0 ? '<div class="no-draws">No draws scheduled</div>' : `
           <div class="draw-row draw-row-header">
             <span>Time</span><span>#</span><span>Title</span>
-            <span>Ball (s)</span><span>Ticket £</span><span>Full House £</span><span>Line £</span><span>Actions</span>
+            <span>Ball (s)</span><span>Ticket Pts</span><span>Full House Pts</span><span>Line Pts</span><span>Actions</span>
           </div>
           ${day.draws.map(d => `
             <div class="draw-row">
@@ -184,9 +184,9 @@ async function loadDraws() {
               <span>${d.draw_number}</span>
               <span>${d.title}</span>
               <span>${d.ball_interval}s</span>
-              <span>£${Number(d.ticket_price).toFixed(2)}</span>
-              <span>£${Number(d.full_house_prize).toFixed(2)}</span>
-              <span>£${Number(d.line_prize).toFixed(2)}</span>
+              <span>${Math.round(d.ticket_price)} Pts</span>
+              <span>${Math.round(d.full_house_prize)} Pts</span>
+              <span>${Math.round(d.line_prize)} Pts</span>
               <span style="display:flex;gap:6px">
                 <button class="btn btn-sm btn-ghost" onclick="openDrawModal(${day.day}, ${JSON.stringify(d).replace(/"/g,'&quot;')})">Edit</button>
                 <button class="btn btn-sm btn-danger" onclick="deleteDraw(${d.id})">Del</button>
@@ -380,7 +380,7 @@ async function loadTickets() {
       <td>${t.draw_date}</td>
       <td>${t.user_name}<br><span class="text-muted">${t.user_phone || ''}</span></td>
       <td><span class="badge ${statusBadge(t.status)}">${t.status}</span></td>
-      <td class="text-warning">£${Number(t.prize_amount).toFixed(2)}</td>
+      <td class="text-warning">${Math.round(t.prize_amount)} Pts</td>
       <td>${t.paid_out ? '<span class="badge badge-success">Paid</span>' : '<span class="badge badge-warning">Pending</span>'}</td>
       <td>${t.paid_out ? '' : `<button class="btn btn-sm btn-success" onclick="payTicket(${t.id})">Pay Out</button>`}</td>
     </tr>
@@ -413,7 +413,7 @@ async function loadJackpot() {
   document.getElementById('jackpot-enabled').checked = !!data.enabled
   document.getElementById('jackpot-amount').value    = data.amount
   document.getElementById('jackpot-balls').value     = data.ball_count
-  document.getElementById('jackpot-display').textContent = `£${Number(data.amount).toFixed(2)}`
+  document.getElementById('jackpot-display').textContent = `${Math.round(data.amount)} Pts`
   document.getElementById('jackpot-status-label').textContent = data.enabled ? 'Jackpot Active' : 'Jackpot Disabled'
   document.getElementById('jackpot-status-label').style.color = data.enabled ? 'var(--success)' : 'var(--muted)'
 }
@@ -424,7 +424,7 @@ document.getElementById('jackpot-enabled').addEventListener('change', function()
 })
 
 document.getElementById('jackpot-amount').addEventListener('input', function() {
-  document.getElementById('jackpot-display').textContent = `£${Number(this.value || 0).toFixed(2)}`
+  document.getElementById('jackpot-display').textContent = `${Math.round(this.value || 0)} Pts`
 })
 
 document.getElementById('save-jackpot-btn').addEventListener('click', async () => {
@@ -826,8 +826,8 @@ async function loadPayouts() {
       <td>#${t.id}</td>
       <td>${t.user_name}</td>
       <td><span class="badge ${txnBadge(t.type)}">${t.type}</span></td>
-      <td class="${t.amount >= 0 ? 'text-success' : 'text-danger'}">£${Math.abs(t.amount).toFixed(2)}</td>
-      <td>£${Number(t.balance_after).toFixed(2)}</td>
+      <td class="${t.amount >= 0 ? 'text-success' : 'text-danger'}">${Math.round(Math.abs(t.amount))} Pts</td>
+      <td>${Math.round(t.balance_after)} Pts</td>
       <td class="text-muted">${t.description || '—'}</td>
       <td class="text-muted" style="font-size:.78rem">${t.created_at?.slice(0,16).replace('T',' ') || ''}</td>
     </tr>
@@ -853,8 +853,8 @@ document.getElementById('txn-type-filter').addEventListener('change', async func
     <tr>
       <td>#${t.id}</td><td>${t.user_name}</td>
       <td><span class="badge ${txnBadge(t.type)}">${t.type}</span></td>
-      <td class="${t.amount >= 0 ? 'text-success' : 'text-danger'}">£${Math.abs(t.amount).toFixed(2)}</td>
-      <td>£${Number(t.balance_after).toFixed(2)}</td>
+      <td class="${t.amount >= 0 ? 'text-success' : 'text-danger'}">${Math.round(Math.abs(t.amount))} Pts</td>
+      <td>${Math.round(t.balance_after)} Pts</td>
       <td class="text-muted">${t.description || '—'}</td>
       <td class="text-muted" style="font-size:.78rem">${t.created_at?.slice(0,16).replace('T',' ') || ''}</td>
     </tr>
@@ -1170,7 +1170,7 @@ async function deleteSpecialDraw(id) {
 // Payout modal (deposit / withdraw)
 async function openPayoutModal(type) {
   const users = await GET('/api/users?limit=500')
-  document.getElementById('pm-user').innerHTML = (users || []).map(u => `<option value="${u.id}">${u.name} — £${Number(u.balance||0).toFixed(2)}</option>`).join('')
+  document.getElementById('pm-user').innerHTML = (users || []).map(u => `<option value="${u.id}">${u.name} — ${Math.round(u.balance||0)} Pts</option>`).join('')
   document.getElementById('payout-type').value = type
   document.getElementById('payout-modal-title').textContent = type === 'deposit' ? 'Deposit Funds' : 'Withdraw Funds'
   document.getElementById('pm-amount').value = ''

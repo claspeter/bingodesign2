@@ -147,10 +147,10 @@
             </label>
             <span id="jackpot-status-label" style="font-weight:600">Jackpot Disabled</span>
           </div>
-          <div class="jackpot-amount" id="jackpot-display">£0.00</div>
+          <div class="jackpot-amount" id="jackpot-display">0 Pts</div>
           <div class="form-row mt-4">
             <div class="form-group">
-              <label>Jackpot Amount (£)</label>
+              <label>Jackpot Amount (Pts)</label>
               <input type="number" id="jackpot-amount" min="0" step="0.01" placeholder="1000.00">
             </div>
             <div class="form-group">
@@ -318,16 +318,16 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Ticket Price (£)</label>
-        <input type="number" id="dm-ticket-price" min="0" step="0.01" value="1.00">
+        <label>Ticket Price (Pts)</label>
+        <input type="number" id="dm-ticket-price" min="0" step="1" value="1">
       </div>
       <div class="form-group">
-        <label>Full House Prize (£)</label>
-        <input type="number" id="dm-fh-prize" min="0" step="0.01" value="100.00">
+        <label>Full House Prize (Pts)</label>
+        <input type="number" id="dm-fh-prize" min="0" step="1" value="100">
       </div>
       <div class="form-group">
-        <label>Line Prize (£)</label>
-        <input type="number" id="dm-line-prize" min="0" step="0.01" value="10.00">
+        <label>Line Prize (Pts)</label>
+        <input type="number" id="dm-line-prize" min="0" step="1" value="10">
       </div>
     </div>
     <div class="modal-footer">
@@ -657,8 +657,8 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Amount (£)</label>
-        <input type="number" id="pm-amount" min="0.01" step="0.01" placeholder="0.00">
+        <label>Amount (Pts)</label>
+        <input type="number" id="pm-amount" min="1" step="1" placeholder="0">
       </div>
     </div>
     <div class="form-row">

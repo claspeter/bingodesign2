@@ -306,22 +306,17 @@ body {
 .drum-ball--clone,
 .rest-ball {
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 1px solid transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;     /* clip ::before glint to the circle */
+  border: none;
+  overflow: hidden;
   user-select: none;
   pointer-events: none;
 }
 
-/* Specular glint — bright ellipse at top-left simulating a light source */
-.drum-ball::before,
-.drum-ball--clone::before,
-.rest-ball::before {
+/* Specular glint only on legacy .drum-ball (non-canvas variant) */
+.drum-ball::before {
   content: '';
   position: absolute;
   top: 7%;
@@ -342,17 +337,24 @@ body {
 .drum-ball--clone  { z-index: 60; }
 .rest-ball         { z-index: 65; }   /* above tube SVG so stacked balls are visible */
 
-.drum-ball span,
-.drum-ball--clone span,
-.rest-ball span {
+.drum-ball span {
   position: relative;
-  z-index: 2;       /* always above the ::before glint */
+  z-index: 2;
   font-family: 'Inter', sans-serif;
   font-size: 8px;
   font-weight: 800;
   color: rgba(255,255,255,0.95);
   line-height: 1;
   text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+}
+
+/* Canvas fills the full circle for clone/rest-ball */
+.drum-ball--clone canvas,
+.rest-ball canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 50%;
 }
 
 .rest-ball--latest {

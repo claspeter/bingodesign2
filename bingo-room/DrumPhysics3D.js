@@ -124,20 +124,19 @@ export class DrumPhysics3D {
     const startL = offX + CX + p.x * s - vr
     const startT = offY + CY - p.y * s - vr
 
-    // DOM clone travels through the tube (tube lives outside the Three.js canvas)
+    // DOM clone travels through the tube — rendered using the same ball canvas as the drum
+    const ballSrc = this._createBallCanvas(e.number, e.color)
+    const cloneCnv = document.createElement('canvas')
+    cloneCnv.width = cloneCnv.height = 64
+    cloneCnv.getContext('2d').drawImage(ballSrc, 0, 0, 64, 64)
+
     const clone = document.createElement('div')
     clone.className = 'drum-ball--clone'
-    clone.innerHTML = `<span>${e.number}</span>`
-    const bg = this._ballGradient(e.color)
+    clone.appendChild(cloneCnv)
     clone.style.cssText =
-      `background:${bg};` +
-      `border-color:${e.color}bb;` +
-      `box-shadow:0 3px 8px rgba(0,0,0,0.65),` +
-        `inset -2px -3px 6px rgba(0,0,0,0.40),` +
-        `inset 1px 1px 4px rgba(255,255,255,0.40),` +
-        `0 0 8px ${e.color}55;` +
       `left:${startL}px;top:${startT}px;` +
-      `transform:scale(${vs});z-index:60;`
+      `transform:scale(${vs});z-index:60;` +
+      `box-shadow:0 3px 10px rgba(0,0,0,0.70),0 0 10px ${e.color}66;`
     this.machineEl.appendChild(clone)
 
     // Hide the Three.js mesh while clone animates
@@ -162,19 +161,17 @@ export class DrumPhysics3D {
         e.mesh.material.dispose()
         this.entries = this.entries.filter(x => x !== e)
 
-        // Permanent rest ball (DOM, styled like animation-1 rest balls)
+        // Permanent rest ball — same canvas texture as the clone
+        const rbCnv = document.createElement('canvas')
+        rbCnv.width = rbCnv.height = 64
+        rbCnv.getContext('2d').drawImage(ballSrc, 0, 0, 64, 64)
+
         const rb = document.createElement('div')
         rb.className = 'rest-ball rest-ball--latest'
-        rb.innerHTML = clone.innerHTML
-        rb.style.background  = bg
-        rb.style.borderColor = e.color + 'bb'
-        rb.style.boxShadow   =
-          `0 2px 6px rgba(0,0,0,0.60),` +
-          `inset -2px -3px 5px rgba(0,0,0,0.38),` +
-          `inset 1px 1px 3px rgba(255,255,255,0.42),` +
-          `0 0 10px ${e.color}88`
-        rb.style.left = slot.left + 'px'
-        rb.style.top  = slot.top  + 'px'
+        rb.appendChild(rbCnv)
+        rb.style.cssText =
+          `left:${slot.left}px;top:${slot.top}px;` +
+          `box-shadow:0 2px 6px rgba(0,0,0,0.60),0 0 10px ${e.color}88;`
         this.machineEl.appendChild(rb)
         setTimeout(() => rb.classList.remove('rest-ball--latest'), 2200)
 
@@ -362,17 +359,17 @@ export class DrumPhysics3D {
   // ── Private: canvas texture for each ball ────────────────────────────
   // Classic bingo-ball look: coloured sphere + white equatorial stripe + number
 
-  _createBallTexture(number, color) {
+  _createBallCanvas(number, color) {
     const S   = 256
     const cnv = document.createElement('canvas')
     cnv.width = cnv.height = S
     const ctx = cnv.getContext('2d')
 
-    // Base colour fill (wraps entire sphere)
+    // Base colour fill
     ctx.fillStyle = color
     ctx.fillRect(0, 0, S, S)
 
-    // White equatorial stripe — maps to roughly the front-facing band on the sphere
+    // White equatorial stripe
     const bandY1 = Math.round(S * 0.355)
     const bandY2 = Math.round(S * 0.645)
     ctx.fillStyle = 'rgba(255,255,255,0.93)'
@@ -386,36 +383,28 @@ export class DrumPhysics3D {
     // Number text centred in the stripe
     const numStr   = String(number)
     const fontSize = numStr.length > 1 ? 72 : 90
-    ctx.font          = `900 ${fontSize}px Inter, Arial Black, sans-serif`
-    ctx.textAlign     = 'center'
-    ctx.textBaseline  = 'middle'
-    ctx.fillStyle     = color
-    // Slight shadow for depth on the stripe
-    ctx.shadowColor   = 'rgba(0,0,0,0.18)'
-    ctx.shadowBlur    = 4
+    ctx.font         = `900 ${fontSize}px Inter, Arial Black, sans-serif`
+    ctx.textAlign    = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle    = color
+    ctx.shadowColor  = 'rgba(0,0,0,0.18)'
+    ctx.shadowBlur   = 4
     ctx.fillText(numStr, S / 2, S / 2)
-    ctx.shadowBlur    = 0
+    ctx.shadowBlur   = 0
 
-    // Gloss overlay: radial white gradient at top-left (simulates plastic shine)
+    // Gloss overlay: radial white gradient at top-left
     const gloss = ctx.createRadialGradient(S * 0.28, S * 0.18, 0, S * 0.28, S * 0.18, S * 0.45)
-    gloss.addColorStop(0,   'rgba(255,255,255,0.50)')
-    gloss.addColorStop(0.35,'rgba(255,255,255,0.15)')
-    gloss.addColorStop(1,   'rgba(255,255,255,0)')
+    gloss.addColorStop(0,    'rgba(255,255,255,0.50)')
+    gloss.addColorStop(0.35, 'rgba(255,255,255,0.15)')
+    gloss.addColorStop(1,    'rgba(255,255,255,0)')
     ctx.fillStyle = gloss
     ctx.fillRect(0, 0, S, S)
 
-    return new THREE.CanvasTexture(cnv)
+    return cnv
   }
 
-  // CSS radial-gradient used for DOM clones + rest balls in the tube
-  _ballGradient(color) {
-    return `radial-gradient(circle at 35% 28%,
-      rgba(255,255,255,0.88) 0%,
-      rgba(255,255,255,0.48) 8%,
-      ${color}ff 22%,
-      ${color}cc 50%,
-      ${color}55 75%,
-      rgba(0,0,0,0.55) 100%)`
+  _createBallTexture(number, color) {
+    return new THREE.CanvasTexture(this._createBallCanvas(number, color))
   }
 
   // ── Private: physics forces (identical to animation-1) ───────────────
