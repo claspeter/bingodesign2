@@ -10,6 +10,7 @@ const BALL_3D_R     = 8     // Three.js sphere radius (world units = px)
 const DRUM_INNER_R  = 118   // soft containment sphere radius
 const DRUM_SIZE     = 290   // drum-sphere CSS size in px (square)
 const PERSP         = 185   // camera Z — matches animation-1 perspective depth
+const DEG_PER_PX    = 360 / (2 * Math.PI * BALL_VISUAL_R)  // ~7.16 deg/px rolling rate
 
 // Camera vertical FOV so that world-unit distances = pixel distances at z=0
 const CAM_FOV = 2 * Math.atan((DRUM_SIZE / 2) / PERSP) * (180 / Math.PI)
@@ -19,32 +20,36 @@ const F_TURB = 150
 const V_MIN  = 10
 const V_MAX  = 130
 
+// ── Tube tilt: B, D, F tilt 2°; H stays flat ─────────────────────────────
+const TAN2 = Math.tan(2 * Math.PI / 180)   // ≈ 0.03492
+
 // ── Tube centre-line waypoints (machine-container coords) ─────────────────
 const TUBE_WP = [
   { x: 155, y: 100 },   // [0] drum-top exit collar
   { x: 155, y: 12  },   // [1] tube peak  ← REVEAL point
-  { x: 530, y: 12  },   // [2] top-right corner
+  { x: 530, y: Math.round(12  + (530 - 155) * TAN2) },  // [2] B right end  (~25)
   { x: 530, y: 135 },   // [3] first drop
-  { x: 375, y: 135 },   // [4] middle-left
+  { x: 375, y: Math.round(135 + (530 - 375) * TAN2) },  // [4] D left end   (~140)
   { x: 375, y: 255 },   // [5] second drop
-  { x: 530, y: 255 },   // [6] second-right
+  { x: 530, y: Math.round(255 + (530 - 375) * TAN2) },  // [6] F right end  (~260)
   { x: 530, y: 385 },   // [7] final drop
   { x: 120, y: 385 },   // [8] tube end ← ball 0 rests here
 ]
 
-// Precomputed rest slots following the tube path (identical to animation 1)
+// Precomputed rest slots following the tube path (tilted horizontals B, D, F)
 const REST_SLOTS = (() => {
   const R = BALL_VISUAL_R
   const s = []
   const add = (cx, cy, sec) => s.push({ left: cx - R, top: cy - R, sec })
   const S = 18
+  const wp2y = TUBE_WP[2].y, wp4y = TUBE_WP[4].y, wp6y = TUBE_WP[6].y
   for (let cx = 120 + R; cx <= 530 - R; cx += S) add(cx, 385, 'H')
-  for (let cy = 385 - S; cy >= 255 + R; cy -= S) add(530, cy, 'G')
-  for (let cx = 530 - S; cx >= 375 + R; cx -= S) add(cx, 255, 'F')
-  for (let cy = 255 - S; cy >= 135 + R; cy -= S) add(375, cy, 'E')
-  for (let cx = 375 + R; cx <= 530 - R; cx += S) add(cx, 135, 'D')
-  for (let cy = 135 - S; cy >= 12 + R; cy -= S) add(530, cy, 'C')
-  for (let cx = 530 - S; cx >= 155 + R; cx -= S) add(cx, 12, 'B')
+  for (let cy = 385 - S; cy >= wp6y + R; cy -= S) add(530, cy, 'G')
+  for (let cx = 530 - S; cx >= 375 + R; cx -= S) add(cx, Math.round(255 + (cx - 375) * TAN2), 'F')
+  for (let cy = 255 - S; cy >= wp4y + R; cy -= S) add(375, cy, 'E')
+  for (let cx = 375 + R; cx <= 530 - R; cx += S) add(cx, Math.round(135 + (530 - cx) * TAN2), 'D')
+  for (let cy = 135 - S; cy >= wp2y + R; cy -= S) add(530, cy, 'C')
+  for (let cx = 530 - S; cx >= 155 + R; cx -= S) add(cx, Math.round(12 + (cx - 155) * TAN2), 'B')
   return s
 })()
 
@@ -179,9 +184,12 @@ export class DrumPhysics3D {
       }
     })
 
+    const rot = px => Math.round(px * DEG_PER_PX)
+
     tl.to(clone, { left: wp(0).left, top: wp(0).top,
-                   transform: 'scale(1)', duration: 0.32, ease: 'power2.in' })
+                   scale: 1, rotation: `+=${rot(100)}`, duration: 0.32, ease: 'power2.in' })
       .to(clone, { left: wp(1).left, top: wp(1).top,
+                   rotation: `+=${rot(TUBE_WP[0].y - TUBE_WP[1].y)}`,
                    duration: 0.20, ease: 'power3.out',
                    onComplete: () => {
                      gsap.fromTo(clone,
@@ -191,22 +199,34 @@ export class DrumPhysics3D {
                    } })
 
     if (sec !== 'B') {
-      tl.to(clone, { left: wp(2).left, top: wp(2).top, duration: 0.42, ease: 'none' })
+      tl.to(clone, { left: wp(2).left, top: wp(2).top,
+                     rotation: `+=${rot(TUBE_WP[2].x - TUBE_WP[1].x)}`,
+                     duration: 0.42, ease: 'none' })
     }
     if (sec !== 'B' && sec !== 'C') {
-      tl.to(clone, { left: wp(3).left, top: wp(3).top, duration: 0.24, ease: 'power2.in' })
+      tl.to(clone, { left: wp(3).left, top: wp(3).top,
+                     rotation: `+=${rot(TUBE_WP[3].y - TUBE_WP[2].y)}`,
+                     duration: 0.24, ease: 'power2.in' })
     }
     if (sec === 'E' || sec === 'F' || sec === 'G' || sec === 'H') {
-      tl.to(clone, { left: wp(4).left, top: wp(4).top, duration: 0.28, ease: 'none' })
+      tl.to(clone, { left: wp(4).left, top: wp(4).top,
+                     rotation: `-=${rot(TUBE_WP[3].x - TUBE_WP[4].x)}`,
+                     duration: 0.28, ease: 'none' })
     }
     if (sec === 'F' || sec === 'G' || sec === 'H') {
-      tl.to(clone, { left: wp(5).left, top: wp(5).top, duration: 0.24, ease: 'power2.in' })
+      tl.to(clone, { left: wp(5).left, top: wp(5).top,
+                     rotation: `+=${rot(TUBE_WP[5].y - TUBE_WP[4].y)}`,
+                     duration: 0.24, ease: 'power2.in' })
     }
     if (sec === 'G' || sec === 'H') {
-      tl.to(clone, { left: wp(6).left, top: wp(6).top, duration: 0.28, ease: 'none' })
+      tl.to(clone, { left: wp(6).left, top: wp(6).top,
+                     rotation: `+=${rot(TUBE_WP[6].x - TUBE_WP[5].x)}`,
+                     duration: 0.28, ease: 'none' })
     }
     if (sec === 'H') {
-      tl.to(clone, { left: wp(7).left, top: wp(7).top, duration: 0.30, ease: 'power2.in' })
+      tl.to(clone, { left: wp(7).left, top: wp(7).top,
+                     rotation: `+=${rot(TUBE_WP[7].y - TUBE_WP[6].y)}`,
+                     duration: 0.30, ease: 'power2.in' })
     }
 
     const entryL = { H: wp(7).left, G: wp(6).left, F: wp(5).left,
@@ -217,9 +237,18 @@ export class DrumPhysics3D {
     const vDist = Math.abs(slot.top  - entryT)
 
     if (sec === 'H' || sec === 'F' || sec === 'D' || sec === 'B') {
-      tl.to(clone, { left: slot.left, duration: Math.max(0.15, hDist / 600), ease: 'power2.out' })
+      const rightward = sec === 'B' || sec === 'F'
+      const rotStr    = rightward ? `+=${rot(hDist)}` : `-=${rot(hDist)}`
+      if (sec === 'H') {
+        tl.to(clone, { left: slot.left, rotation: rotStr,
+                       duration: Math.max(0.15, hDist / 600), ease: 'power2.out' })
+      } else {
+        tl.to(clone, { left: slot.left, top: slot.top, rotation: rotStr,
+                       duration: Math.max(0.15, hDist / 600), ease: 'power2.out' })
+      }
     } else {
-      tl.to(clone, { top: slot.top,  duration: Math.max(0.15, vDist / 600), ease: 'power2.in' })
+      tl.to(clone, { top: slot.top, rotation: `+=${rot(vDist)}`,
+                     duration: Math.max(0.15, vDist / 600), ease: 'power2.in' })
     }
 
     return e.number
