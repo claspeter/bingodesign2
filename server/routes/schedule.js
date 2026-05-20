@@ -100,6 +100,7 @@ router.post('/generate-today', requireAuth, (req, res) => {
     }
   }
 
+  if (created > 0) triggerReschedule()
   res.json({ ok: true, created, skipped })
 })
 
