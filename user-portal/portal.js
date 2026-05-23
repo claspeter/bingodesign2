@@ -49,11 +49,11 @@ async function apiFetch(path, opts = {}) {
 
 // ── Toast ─────────────────────────────────────────────────────────────────
 
-function showToast(msg) {
+function showToast(msg, ms) {
   const el = $('reg-success');
   $('reg-success-msg').textContent = msg;
   el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 3500);
+  setTimeout(() => el.classList.add('hidden'), ms || 3500);
 }
 
 // ── Home screen ───────────────────────────────────────────────────────────
@@ -473,18 +473,24 @@ $('btnBuyConfirm').addEventListener('click', async () => {
   buyQty = 1;
   hideModal('modal-buy');
 
-  // Store ticket in localStorage so bingo room tab can read it
+  // Store cards in localStorage (shared across tabs) so bingo room can read them immediately
   try {
-    const allCards = (data.tickets || []).flatMap(t => t.cards ?? []);
-    localStorage.setItem('bingoRoomTicket', JSON.stringify({
-      draw_id:   activeBuyDrawId,
-      drawTitle: activeBuyDrawTitle,
-      cards:     allCards
-    }));
-  } catch (e) { console.warn('Could not write bingoRoomTicket', e); }
+    const boughtDraw = [...allDraws, ...specialDraws].find(d => d.id === activeBuyDrawId);
+    if (data.tickets && data.tickets.length) {
+      const existing = JSON.parse(localStorage.getItem('bingoRoomTicket') || '{"cards":[]}');
+      const existingCards = Array.isArray(existing.cards) ? existing.cards : [];
+      const newCards = data.tickets.flatMap(t => t.cards || []);
+      localStorage.setItem('bingoRoomTicket', JSON.stringify({
+        cards:     [...existingCards, ...newCards],
+        draw_id:   activeBuyDrawId,
+        drawTitle: (boughtDraw && (boughtDraw.title || boughtDraw.name)) || existing.drawTitle || 'Bingo Draw'
+      }));
+    }
+  } catch (e) { /* non-fatal */ }
 
   closeSection();
-  showToast(`✅ ${purchased} ticket${purchased > 1 ? 's' : ''} purchased!`);
+  const plural = purchased > 1 ? 's' : '';
+  showToast(purchased + ' ticket' + plural + ' bought! Click Enter Bingo Room to play.', 6000);
 });
 
 // ── Get Points modal ──────────────────────────────────────────────────────
