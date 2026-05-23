@@ -463,34 +463,55 @@ $('btnBuyConfirm').addEventListener('click', async () => {
     return;
   }
 
-  // update local balance
-  if (data.remaining_points !== undefined) currentUser.points = data.remaining_points;
-  else if (data.points !== undefined)      currentUser.points = data.points;
-  else                                     currentUser.points = balance - cost;
-
-  renderTopBar();
-  const purchased = buyQty;
-  buyQty = 1;
-  hideModal('modal-buy');
-
-  // Store cards in localStorage (shared across tabs) so bingo room can read them immediately
+  // update local balance + close modal + navigate home
   try {
-    const boughtDraw = [...allDraws, ...specialDraws].find(d => d.id === activeBuyDrawId);
-    if (data.tickets && data.tickets.length) {
-      const existing = JSON.parse(localStorage.getItem('bingoRoomTicket') || '{"cards":[]}');
-      const existingCards = Array.isArray(existing.cards) ? existing.cards : [];
-      const newCards = data.tickets.flatMap(t => t.cards || []);
-      localStorage.setItem('bingoRoomTicket', JSON.stringify({
-        cards:     [...existingCards, ...newCards],
-        draw_id:   activeBuyDrawId,
-        drawTitle: (boughtDraw && (boughtDraw.title || boughtDraw.name)) || existing.drawTitle || 'Bingo Draw'
-      }));
-    }
-  } catch (e) { /* non-fatal */ }
+    if (data.remaining_points !== undefined) currentUser.points = data.remaining_points;
+    else if (data.points !== undefined)      currentUser.points = data.points;
+    else                                     currentUser.points = balance - cost;
 
-  closeSection();
-  const plural = purchased > 1 ? 's' : '';
-  showToast(purchased + ' ticket' + plural + ' bought! Click Enter Bingo Room to play.', 6000);
+    try { renderTopBar(); } catch(e) { console.warn('renderTopBar failed', e); }
+
+    const purchased = buyQty;
+    buyQty = 1;
+
+    // close buy modal
+    $('modal-buy').classList.add('hidden');
+
+    // Store cards in localStorage so bingo room tab can read them
+    try {
+      const boughtDraw = [...allDraws, ...specialDraws].find(d => d.id === activeBuyDrawId);
+      if (data.tickets && data.tickets.length) {
+        const existing = JSON.parse(localStorage.getItem('bingoRoomTicket') || '{"cards":[]}');
+        const existingCards = Array.isArray(existing.cards) ? existing.cards : [];
+        const newCards = data.tickets.flatMap(t => t.cards || []);
+        localStorage.setItem('bingoRoomTicket', JSON.stringify({
+          cards:     [...existingCards, ...newCards],
+          draw_id:   activeBuyDrawId,
+          drawTitle: (boughtDraw && (boughtDraw.title || boughtDraw.name)) || existing.drawTitle || 'Bingo Draw'
+        }));
+      }
+    } catch (e) { console.warn('localStorage write failed', e); }
+
+    // return to main game screen
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('game-main').style.display = '';
+
+    // success toast
+    const plural = purchased > 1 ? 's' : '';
+    const toastEl = document.getElementById('reg-success');
+    const toastMsg = document.getElementById('reg-success-msg');
+    if (toastEl && toastMsg) {
+      toastMsg.textContent = purchased + ' ticket' + plural + ' bought! Click Enter Bingo Room to play.';
+      toastEl.classList.remove('hidden');
+      setTimeout(() => toastEl.classList.add('hidden'), 6000);
+    }
+  } catch (err) {
+    console.error('Buy success block threw:', err);
+    // hard fallback — still close modal and go home
+    document.getElementById('modal-buy').classList.add('hidden');
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('game-main').style.display = '';
+  }
 });
 
 // ── Get Points modal ──────────────────────────────────────────────────────
