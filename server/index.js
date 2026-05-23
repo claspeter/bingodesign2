@@ -56,16 +56,6 @@ app.get('/bingo-room/index.html',  serveIndex('../bingo-room'))
 app.get('/admin',                  serveIndex('../admin'))
 app.get('/admin/',                 serveIndex('../admin'))
 
-// Serve announcer image(s) from project root (not inside landing/)
-// Matches /announcer.png, /announcer-a.png, /announcer-b.png, etc.
-app.get(/^\/announcer(-\w+)?\.png$/, (req, res) => {
-  const name = req.path.replace(/^\//, '')
-  const filePath = join(__dirname, '..', name)
-  res.sendFile(filePath, err => {
-    if (err) res.sendFile(join(__dirname, '../announcer.png'))
-  })
-})
-
 app.use('/',             express.static(join(__dirname, '../landing'),      noCache))
 app.use('/admin',        express.static(join(__dirname, '../admin'),        noCache))
 app.use('/agent-portal', express.static(join(__dirname, '../agent-portal'), noCache))
@@ -281,6 +271,7 @@ function scheduleNextDraw() {
   io.emit('waiting', {
     nextDrawTime:  new Date(startMs).toISOString(),
     nextDrawTitle: next.title,
+    announcer:     next.announcer ?? null,
   })
 
   if (delay <= 0) {
@@ -345,6 +336,7 @@ io.on('connection', (socket) => {
       ...getState(game), phase: 'waiting',
       nextDrawTime:  new Date(startMs).toISOString(),
       nextDrawTitle: currentDraw.title,
+      announcer:     currentDraw.announcer ?? null,
     })
   } else if (gamePhase === 'waiting') {
     socket.emit('state', { ...getState(game), phase: 'waiting', nextDrawTime: null, nextDrawTitle: null })

@@ -572,10 +572,11 @@ function connectSocket() {
   })
 
   // Initial state on connect
-  socket.on('state', ({ called, gameOver, phase, nextDrawTime, nextDrawTitle }) => {
+  socket.on('state', ({ called, gameOver, phase, nextDrawTime, nextDrawTitle, announcer: annType }) => {
     calledSet = new Set(called)
     if (phase === 'waiting') {
       _nextDrawTitle = nextDrawTitle || 'this draw'
+      if (annType) announcer.setType(annType)
       renderPlayerCard()
       showWaitingPanel(nextDrawTime, nextDrawTitle)
       return
@@ -591,9 +592,10 @@ function connectSocket() {
   })
 
   // Server signals waiting for next draw
-  socket.on('waiting', ({ nextDrawTime, nextDrawTitle }) => {
+  socket.on('waiting', ({ nextDrawTime, nextDrawTitle, announcer: annType }) => {
     _nextDrawTitle = nextDrawTitle || 'this draw'
     _introPlayed   = false        // allow intro for the new draw
+    if (annType) announcer.setType(annType)
     gsap.to(announcer._el, { opacity: 0, duration: 0.5 })  // hide announcer between draws
     renderPlayerCard()
     showWaitingPanel(nextDrawTime, nextDrawTitle)
