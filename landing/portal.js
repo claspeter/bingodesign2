@@ -49,11 +49,11 @@ async function apiFetch(path, opts = {}) {
 
 // ── Toast ─────────────────────────────────────────────────────────────────
 
-function showToast(msg) {
+function showToast(msg, ms) {
   const el = $('reg-success');
   $('reg-success-msg').textContent = msg;
   el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 3500);
+  setTimeout(() => el.classList.add('hidden'), ms || 3500);
 }
 
 // ── Home screen ───────────────────────────────────────────────────────────
@@ -77,7 +77,6 @@ $('btnPlay').addEventListener('click', () => {
 
 function clearRegForm() {
   ['regName','regEmail','regPhone','regPassword'].forEach(id => $(id).value = '');
-  $('regTcCheck').checked = false;
   hideErr('regErr');
 }
 
@@ -96,10 +95,6 @@ $('btnRegSubmit').addEventListener('click', async () => {
   }
   if (password.length < 6) {
     showErr('regErr', 'Password must be at least 6 characters.');
-    return;
-  }
-  if (!$('regTcCheck').checked) {
-    showErr('regErr', 'Please accept the Terms & Conditions to continue.');
     return;
   }
 
@@ -248,7 +243,8 @@ let specialDraws = [];
 
 function drawScheduledTime(d) {
   // API returns draw_date ("2026-05-15") and draw_time ("18:00:00") separately
-  if (d.draw_date && d.draw_time) return new Date(d.draw_date + 'T' + d.draw_time + 'Z');
+  if (d.scheduled_utc) return new Date(d.scheduled_utc);
+  if (d.draw_date && d.draw_time) return new Date(d.draw_date + 'T' + d.draw_time + '+03:00');
   if (d.scheduled_time) return new Date(d.scheduled_time);
   return null;
 }
@@ -261,9 +257,10 @@ async function loadDraws() {
     specialDraws = data.special || [];
   }
 
-  // find next scheduled regular draw
+  // find next scheduled regular draw that hasn't started yet
+  const now = Date.now();
   const scheduled = allDraws
-    .filter(d => d.status === 'scheduled')
+    .filter(d => d.status === 'scheduled' && drawScheduledTime(d) > now)
     .sort((a, b) => drawScheduledTime(a) - drawScheduledTime(b));
 
   nextDraw = scheduled[0] || null;
@@ -376,16 +373,18 @@ function drawCard(d, showBuy) {
 
 // ── Buy confirm modal ─────────────────────────────────────────────────────
 
-let activeBuyDrawId = null;
-let activeBuyPrice  = 1;
+let activeBuyDrawId    = null;
+let activeBuyDrawTitle = '';
+let activeBuyPrice     = 1;
 let buyQty = 1;
 
 function openBuyModal(drawId) {
   const draw = [...allDraws, ...specialDraws].find(d => d.id === drawId);
   if (!draw) return;
 
-  activeBuyDrawId = drawId;
-  activeBuyPrice  = draw.ticket_price ?? draw.price ?? 1;
+  activeBuyDrawId    = drawId;
+  activeBuyDrawTitle = draw.name || draw.title || 'Draw';
+  activeBuyPrice     = draw.ticket_price ?? draw.price ?? 1;
   buyQty = 1;
 
   const balance = currentUser.points ?? 0;
@@ -425,9 +424,7 @@ function updateBuyModal(balance) {
   $('buyBal').textContent  = bal;
 }
 
-$('closeBuy').addEventListener('click', () => {
-  hideModal('modal-buy');
-});
+$('closeBuy').addEventListener('click', () => hideModal('modal-buy'));
 
 $('btnBuyConfirm').addEventListener('click', async () => {
   hideErr('buyErr');
@@ -466,25 +463,55 @@ $('btnBuyConfirm').addEventListener('click', async () => {
     return;
   }
 
-  // Update local balance
-  if (data.remaining_points !== undefined) currentUser.points = data.remaining_points;
-  else if (data.points !== undefined)      currentUser.points = data.points;
-  else                                     currentUser.points = balance - cost;
+  // update local balance + close modal + navigate home
+  try {
+    if (data.remaining_points !== undefined) currentUser.points = data.remaining_points;
+    else if (data.points !== undefined)      currentUser.points = data.points;
+    else                                     currentUser.points = balance - cost;
 
-  renderTopBar();
-  const purchased = buyQty;
-  buyQty = 1;
-  numpadInput = '';
+    try { renderTopBar(); } catch(e) { console.warn('renderTopBar failed', e); }
 
-  // Close modal and return to main game page after brief success flash
-  hideModal('modal-buy');
-  closeSection();
-  // Brief toast notification
-  const toast = document.createElement('div');
-  toast.className = 'buy-toast';
-  toast.textContent = `✅ ${purchased} ticket${purchased > 1 ? 's' : ''} purchased!`;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+    const purchased = buyQty;
+    buyQty = 1;
+
+    // close buy modal
+    $('modal-buy').classList.add('hidden');
+
+    // Store cards in localStorage so bingo room tab can read them
+    try {
+      const boughtDraw = [...allDraws, ...specialDraws].find(d => d.id === activeBuyDrawId);
+      if (data.tickets && data.tickets.length) {
+        const existing = JSON.parse(localStorage.getItem('bingoRoomTicket') || '{"cards":[]}');
+        const existingCards = Array.isArray(existing.cards) ? existing.cards : [];
+        const newCards = data.tickets.flatMap(t => t.cards || []);
+        localStorage.setItem('bingoRoomTicket', JSON.stringify({
+          cards:     [...existingCards, ...newCards],
+          draw_id:   activeBuyDrawId,
+          drawTitle: (boughtDraw && (boughtDraw.title || boughtDraw.name)) || existing.drawTitle || 'Bingo Draw'
+        }));
+      }
+    } catch (e) { console.warn('localStorage write failed', e); }
+
+    // return to main game screen
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('game-main').style.display = '';
+
+    // success toast
+    const plural = purchased > 1 ? 's' : '';
+    const toastEl = document.getElementById('reg-success');
+    const toastMsg = document.getElementById('reg-success-msg');
+    if (toastEl && toastMsg) {
+      toastMsg.textContent = purchased + ' ticket' + plural + ' bought! Click Enter Bingo Room to play.';
+      toastEl.classList.remove('hidden');
+      setTimeout(() => toastEl.classList.add('hidden'), 6000);
+    }
+  } catch (err) {
+    console.error('Buy success block threw:', err);
+    // hard fallback — still close modal and go home
+    document.getElementById('modal-buy').classList.add('hidden');
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('game-main').style.display = '';
+  }
 });
 
 // ── Get Points modal ──────────────────────────────────────────────────────
