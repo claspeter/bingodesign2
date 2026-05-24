@@ -1,4 +1,5 @@
 import express from 'express'
+import compression from 'compression'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 import { join, dirname } from 'path'
@@ -25,9 +26,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const app        = express()
 const httpServer = createServer(app)
-const io         = new Server(httpServer, { cors: { origin: '*' } })
+const io         = new Server(httpServer, {
+  cors: { origin: '*' },
+  // Tune for many concurrent connections
+  pingInterval:  25000,   // how often to ping clients (ms)
+  pingTimeout:   20000,   // how long before a silent client is dropped (ms)
+  maxHttpBufferSize: 1e5, // 100KB max message — prevents memory abuse
+  transports: ['websocket', 'polling'], // prefer WebSocket, polling as fallback
+})
 
-app.use(express.json())
+// ── Gzip compression for all HTTP responses ───────────────────────────────
+// Reduces JS/CSS/HTML payload by ~70%, cuts bandwidth and page load time
+app.use(compression({ level: 6, threshold: 1024 }))
+
+app.use(express.json({ limit: '100kb' }))
 app.set('etag', false)
 
 // ── Serve static panels ───────────────────────────────────────────────────

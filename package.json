@@ -13,6 +13,7 @@
     "bcryptjs": "^3.0.3",
     "cannon-es": "^0.20.0",
     "canvas-confetti": "^1.9.3",
+    "compression": "^1.8.1",
     "express": "^4.19.2",
     "gsap": "^3.12.5",
     "jsonwebtoken": "^9.0.3",
