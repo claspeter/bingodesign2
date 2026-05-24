@@ -227,7 +227,8 @@ async function runLineCheck(card, rowIdx) {
     )
   )
 
-  announcer.sayText('LINE!')
+  // Keep the talk animation looping after LINE! speech ends
+  announcer.sayText('LINE!', () => { announcer._startSeq('talk') })
   await new Promise(r => setTimeout(r, 1600))
 
   await new Promise(r =>
@@ -316,7 +317,9 @@ async function runBingoCheck(card) {
       { opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(1.6)', onComplete: r }
     )
   )
-  announcer.sayText('BINGO!')
+  // When BINGO! speech finishes, keep the win animation looping
+  // so the announcer's mouth keeps moving throughout the card check
+  announcer.sayText('BINGO!', () => { announcer._startSeq('win') })
   await new Promise(r => setTimeout(r, 1800))
   await new Promise(r =>
     gsap.to(flash, { opacity: 0, scale: 1.3, duration: 0.3, ease: 'power2.in', onComplete: () => { flash.remove(); r() } })
