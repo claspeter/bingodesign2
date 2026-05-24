@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { query, queryOne, run, insert, transaction, getHouseUserId } from '../db.js'
 import { requireAuth } from '../middleware/auth.js'
 import { generateTicketCards } from '../cardGen.js'
+import { triggerManualWin } from '../gameBridge.js'
 
 const router = Router()
 
@@ -191,6 +192,61 @@ router.post('/:id/generate', requireAuth, (req, res) => {
     [JSON.stringify(ticketIds), req.params.id])
 
   res.json({ ok: true, tickets_created: ticketIds.length })
+})
+
+// POST /api/system-tickets/give-win — manually award line or full house to a specific card
+router.post('/give-win', requireAuth, (req, res) => {
+  const { draw_id, card_code, win_type } = req.body
+  if (!draw_id)   return res.status(400).json({ error: 'draw_id is required' })
+  if (!card_code) return res.status(400).json({ error: 'card_code is required' })
+  if (!['line','bingo','both'].includes(win_type)) {
+    return res.status(400).json({ error: 'win_type must be line, bingo or both' })
+  }
+
+  const draw = queryOne('SELECT id, title, status, line_prize, full_house_prize FROM draws WHERE id = ?', [draw_id])
+  if (!draw)                              return res.status(404).json({ error: 'Draw not found' })
+  if (draw.status !== 'running')          return res.status(400).json({ error: 'Draw must be running to award a win' })
+
+  // Find the ticket that contains this card code
+  const tickets = query(
+    "SELECT id, user_id, numbers FROM tickets WHERE draw_id = ? AND status = 'active'",
+    [draw_id]
+  )
+
+  let foundTicket = null
+  const code = String(card_code).trim().toUpperCase()
+  for (const t of tickets) {
+    try {
+      const cards = JSON.parse(t.numbers)
+      if (Array.isArray(cards) && cards.some(c => String(c.code).toUpperCase() === code)) {
+        foundTicket = t
+        break
+      }
+    } catch {}
+  }
+
+  if (!foundTicket) {
+    return res.status(404).json({ error: `Card code "${card_code}" not found in any active ticket for this draw` })
+  }
+
+  const result = triggerManualWin({
+    drawId:    draw_id,
+    userId:    foundTicket.user_id,
+    ticketId:  foundTicket.id,
+    linePrize: draw.line_prize    ?? 0,
+    bingoPrize: draw.full_house_prize ?? 0,
+    winType:   win_type,
+  })
+
+  if (result?.error) return res.status(400).json({ error: result.error })
+
+  res.json({
+    ok:        true,
+    awarded:   result.awarded,
+    ticket_id: foundTicket.id,
+    user_id:   foundTicket.user_id,
+    card_code: card_code,
+  })
 })
 
 export default router

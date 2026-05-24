@@ -87,7 +87,7 @@ app.use('/api/preset-cards',   presetCardsRoutes)
 
 // ── Auto-expire past scheduled draws ─────────────────────────────────────
 import { query as dbQuery, queryOne as dbQueryOne, run as dbRun, insert as dbInsert } from './db.js'
-import { setRescheduleCallback } from './gameBridge.js'
+import { setRescheduleCallback, setManualWinCallback } from './gameBridge.js'
 
 const TZ_EXPIRE = 'Asia/Nicosia'
 
@@ -419,6 +419,38 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001
 
 setRescheduleCallback(scheduleNextDraw)
+
+// ── Manual win callback (used by POST /api/system-tickets/give-win) ───────
+setManualWinCallback(({ drawId, userId, ticketId, linePrize, bingoPrize, winType }) => {
+  if (!currentDraw || currentDraw.id !== drawId) {
+    return { error: 'This draw is not currently running' }
+  }
+  const results = []
+
+  if ((winType === 'line' || winType === 'both') && !linePrizeAwarded) {
+    linePrizeAwarded = true
+    if (linePrize > 0) awardPrize(userId, drawId, ticketId, linePrize, 'LINE win (manual)')
+    const lu = dbQueryOne('SELECT email FROM users WHERE id = ?', [userId])
+    lineWinnerEmail = (userId === getHouseUserId()) ? null : (lu?.email ?? null)
+    io.emit('prize-awarded', { type: 'line', user_id: userId, amount: linePrize })
+    results.push('line')
+  } else if (winType === 'line' && linePrizeAwarded) {
+    return { error: 'Line prize has already been awarded for this draw' }
+  }
+
+  if ((winType === 'bingo' || winType === 'both') && !bingoPrizeAwarded) {
+    bingoPrizeAwarded = true
+    if (bingoPrize > 0) awardPrize(userId, drawId, ticketId, bingoPrize, 'BINGO win (manual)')
+    const bu = dbQueryOne('SELECT email FROM users WHERE id = ?', [userId])
+    bingoWinnerEmail = (userId === getHouseUserId()) ? null : (bu?.email ?? null)
+    io.emit('prize-awarded', { type: 'bingo', user_id: userId, amount: bingoPrize })
+    results.push('bingo')
+  } else if (winType === 'bingo' && bingoPrizeAwarded) {
+    return { error: 'Full house prize has already been awarded for this draw' }
+  }
+
+  return { ok: true, awarded: results }
+})
 
 initDb().then(() => {
   scheduleNextDraw()

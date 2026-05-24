@@ -892,21 +892,29 @@ document.getElementById('sys-lock-form').addEventListener('submit', e => {
 
 async function openSysTickets() {
   document.getElementById('sys-tickets-modal').classList.add('open')
+  sysShowTab('allocate')
   await Promise.all([loadSysDrawSelector(), loadSysTickets()])
+}
+
+function sysShowTab(tab) {
+  const isAllocate = tab === 'allocate'
+  document.getElementById('sys-panel-allocate').style.display = isAllocate ? '' : 'none'
+  document.getElementById('sys-panel-givewin').style.display  = isAllocate ? 'none' : ''
+  document.getElementById('sys-tab-allocate').style.borderBottomColor = isAllocate ? 'var(--primary)' : 'transparent'
+  document.getElementById('sys-tab-allocate').style.color = isAllocate ? 'var(--text)' : 'var(--muted)'
+  document.getElementById('sys-tab-givewin').style.borderBottomColor  = isAllocate ? 'transparent' : 'var(--primary)'
+  document.getElementById('sys-tab-givewin').style.color  = isAllocate ? 'var(--muted)' : 'var(--text)'
 }
 
 async function loadSysDrawSelector() {
   const draws = await GET('/api/system-tickets/draws')
   if (!draws) return
-  const sel = document.getElementById('sys-draw-select')
-  if (!draws.length) {
-    sel.innerHTML = '<option value="">— no active draws today —</option>'
-    return
-  }
   const statusLabel = s => s === 'running' ? ' ● LIVE' : ''
-  sel.innerHTML = draws.map(d =>
-    `<option value="${d.id}" data-label="${d.title} (${d.draw_date})">${d.title} — ${d.draw_time}${statusLabel(d.status)}</option>`
-  ).join('')
+  const options = draws.length
+    ? draws.map(d => `<option value="${d.id}" data-label="${d.title} (${d.draw_date})">${d.title} — ${d.draw_time}${statusLabel(d.status)}</option>`).join('')
+    : '<option value="">— no active draws today —</option>'
+  document.getElementById('sys-draw-select').innerHTML = options
+  document.getElementById('gw-draw-select').innerHTML  = options
 }
 
 async function loadSysTickets() {
@@ -986,6 +994,45 @@ document.getElementById('sys-add-btn').addEventListener('click', async () => {
   document.getElementById('sys-notes').value        = ''
   toast(`${ticketCount} system tickets added to draw`)
   loadSysTickets()
+})
+
+document.getElementById('gw-submit-btn').addEventListener('click', async () => {
+  const errEl  = document.getElementById('sys-givewin-error')
+  const okEl   = document.getElementById('sys-givewin-success')
+  errEl.classList.add('hidden')
+  okEl.classList.add('hidden')
+
+  const drawId   = document.getElementById('gw-draw-select').value
+  const cardCode = document.getElementById('gw-card-code').value.trim()
+  const winType  = document.getElementById('gw-win-type').value
+
+  if (!drawId)   { errEl.textContent = 'Select a draw first';     errEl.classList.remove('hidden'); return }
+  if (!cardCode) { errEl.textContent = 'Enter a card code';        errEl.classList.remove('hidden'); return }
+
+  const btn = document.getElementById('gw-submit-btn')
+  btn.disabled = true
+  btn.textContent = 'Awarding…'
+
+  const res = await POST('/api/system-tickets/give-win', {
+    draw_id:   Number(drawId),
+    card_code: cardCode,
+    win_type:  winType,
+  })
+
+  btn.disabled = false
+  btn.textContent = '🏆 Award Win'
+
+  if (res?.error) {
+    errEl.textContent = res.error
+    errEl.classList.remove('hidden')
+    return
+  }
+
+  document.getElementById('gw-card-code').value = ''
+  const typeLabel = { line: 'Line', bingo: 'Full House', both: 'Line + Full House' }[winType] || winType
+  okEl.textContent = `✅ ${typeLabel} awarded to ticket #${res.ticket_id} (card ${res.card_code}). Win ceremony fired to all players.`
+  okEl.classList.remove('hidden')
+  toast(`Win awarded — card ${res.card_code}`)
 })
 
 async function updateSysTicket(id, fields) {

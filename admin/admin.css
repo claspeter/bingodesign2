@@ -202,6 +202,8 @@ tr:hover td { background: rgba(124,58,237,.04); }
 .btn-success:hover  { background: rgba(16,185,129,.3); }
 .btn-danger   { background: rgba(239,68,68,.15); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
 .btn-danger:hover   { background: rgba(239,68,68,.25); }
+.btn-warning  { background: rgba(245,158,11,.2); color: #f59e0b; border: 1px solid rgba(245,158,11,.35); }
+.btn-warning:hover  { background: rgba(245,158,11,.32); }
 .btn-ghost    { background: transparent; color: var(--muted); border: 1px solid var(--border); }
 .btn-ghost:hover    { color: var(--text); border-color: var(--muted); }
 .btn-sm { padding: 4px 10px; font-size: .78rem; }

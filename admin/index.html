@@ -521,9 +521,14 @@
     <!-- Summary bar -->
     <div id="sys-summary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:22px"></div>
 
-    <!-- Add entry form -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:22px">
-      <h4 style="font-size:13px;margin-bottom:14px">Allocate System Tickets</h4>
+    <!-- Tabs -->
+    <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:0">
+      <button id="sys-tab-allocate" onclick="sysShowTab('allocate')" style="padding:8px 18px;font-size:13px;font-weight:600;background:none;border:none;border-bottom:3px solid var(--primary);color:var(--text);cursor:pointer;margin-bottom:-1px">Allocate Tickets</button>
+      <button id="sys-tab-givewin"  onclick="sysShowTab('givewin')"  style="padding:8px 18px;font-size:13px;font-weight:600;background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);cursor:pointer;margin-bottom:-1px">🏆 Give Win</button>
+    </div>
+
+    <!-- Tab: Allocate Tickets -->
+    <div id="sys-panel-allocate" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:22px">
       <div id="sys-add-error" class="alert alert-error hidden"></div>
       <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">
         <div>
@@ -549,6 +554,33 @@
           <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Notes (optional)</label>
           <input type="text" id="sys-notes" placeholder="e.g. Christmas promotion" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px" />
         </div>
+      </div>
+    </div>
+
+    <!-- Tab: Give Win -->
+    <div id="sys-panel-givewin" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:22px">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Manually award a win to a specific card during a live draw. The win ceremony fires immediately for all connected players.</p>
+      <div id="sys-givewin-error"   class="alert alert-error   hidden"></div>
+      <div id="sys-givewin-success" class="alert alert-success hidden"></div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Draw (must be live)</label>
+          <select id="gw-draw-select" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px"></select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Card Code</label>
+          <input type="text" id="gw-card-code" placeholder="e.g. 00001" maxlength="10"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px;text-transform:uppercase;letter-spacing:2px;font-family:monospace" />
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Prize Type</label>
+          <select id="gw-win-type" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 10px;font-size:13px">
+            <option value="line">Line</option>
+            <option value="bingo">Full House</option>
+            <option value="both">Both (Line + Full House)</option>
+          </select>
+        </div>
+        <button class="btn btn-warning" id="gw-submit-btn" style="white-space:nowrap;height:38px">🏆 Award Win</button>
       </div>
     </div>
 
