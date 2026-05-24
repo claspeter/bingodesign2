@@ -342,8 +342,8 @@ body {
 /* ── Announcer character ─────────────────────────────────────────────────── */
 .announcer {
   position: fixed;
-  left: 956px;
-  top: 471px;
+  left: 836px;
+  top: 331px;
   width: 200px;
   height: 340px;
   z-index: 160;             /* above bingo overlay (z=150) so always visible */
