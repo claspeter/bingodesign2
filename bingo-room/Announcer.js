@@ -116,12 +116,8 @@ export class Announcer {
     this._img = el.querySelector('.announcer-img')
   }
 
-  // Gentle idle float — only continuous animation
-  _idleAnim() {
-    gsap.to(this._el, {
-      y: -6, duration: 2.6, ease: 'sine.inOut', yoyo: true, repeat: -1,
-    })
-  }
+  // No idle animation — announcer stays perfectly still
+  _idleAnim() {}
 
   // ── Public: say arbitrary text ────────────────────────────────────────────
   sayText(text, onDone) {
