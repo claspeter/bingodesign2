@@ -46,6 +46,7 @@ export class Announcer {
     this._rafId    = null   // requestAnimationFrame handle
     this._tick     = 0
     this._seq      = null   // current frame sequence
+    this._speakGen = 0      // incremented each speak; guards stale onerror callbacks
 
     speechSynthesis.onvoiceschanged = () => { this._voice = pickVoice() }
     this._voice = pickVoice()
@@ -148,12 +149,16 @@ export class Announcer {
   // ── Private: Web Speech API ───────────────────────────────────────────────
   _speak(text, onEnd) {
     if (!('speechSynthesis' in window)) { onEnd(); return }
+    const gen = ++this._speakGen          // snapshot current generation
     const utt = new SpeechSynthesisUtterance(text)
     if (!this._voice) this._voice = pickVoice()
     if (this._voice)  utt.voice = this._voice
     utt.pitch = 1.15; utt.rate = 0.88; utt.volume = 1
-    utt.onend   = onEnd
-    utt.onerror = onEnd
+    // Only call onEnd if this utterance is still the current one —
+    // prevents a cancelled utterance's onerror from stopping the next animation
+    const done = () => { if (this._speakGen === gen) onEnd() }
+    utt.onend   = done
+    utt.onerror = done
     speechSynthesis.speak(utt)
   }
 
