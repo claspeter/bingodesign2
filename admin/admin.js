@@ -988,7 +988,7 @@ document.getElementById('sys-add-btn').addEventListener('click', async () => {
 
   if (res?.error) { errEl.textContent = res.error; errEl.classList.remove('hidden'); return }
 
-  document.getElementById('sys-ticket-count').value = 100
+  document.getElementById('sys-ticket-count').value = 0
   document.getElementById('sys-win-amount').value   = 0
   document.getElementById('sys-winning-ids').value  = ''
   document.getElementById('sys-notes').value        = ''
