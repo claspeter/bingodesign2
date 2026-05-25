@@ -58,7 +58,9 @@ export class Announcer {
   // Switch to a different announcer character (a / b / c / d)
   setType(type) {
     if (!type || !['a','b','c','d'].includes(type)) return
+    this._el.classList.remove(`announcer-${this._type}`)
     this._type = type
+    this._el.classList.add(`announcer-${this._type}`)
     this._setImg('closed')
   }
 
@@ -109,7 +111,7 @@ export class Announcer {
   _build() {
     const el = document.createElement('div')
     el.id        = 'announcer'
-    el.className = 'announcer'
+    el.className = `announcer announcer-${this._type}`
     el.innerHTML = `<img class="announcer-img" src="${IMG(this._type, 'closed')}" alt="announcer"/>`
     document.body.appendChild(el)
     this._el  = el

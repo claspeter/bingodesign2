@@ -351,15 +351,34 @@ body {
   display: flex;
   align-items: flex-end;
   opacity: 0;               /* hidden until T-3s countdown; GSAP fades her in */
+  /* No idle animation */
 }
 
 .announcer-img {
-  width: 200px;
-  height: 340px;
+  width: 100%;
+  height: 100%;
   display: block;
   object-fit: contain;
   object-position: bottom;
   filter: drop-shadow(0 8px 24px rgba(0,0,0,0.65));
+}
+
+/* Types a & b — right side main stage (same base position) */
+.announcer-a,
+.announcer-b {
+  left: 836px;
+  top: 200px;
+  width: 200px;
+  height: 340px;
+}
+
+/* Types c & d — left small stage; left arm at ~90px from screen edge */
+.announcer-c,
+.announcer-d {
+  left: 65px;
+  top: 190px;
+  width: 125px;
+  height: 325px;
 }
 
 .drum-ball span {
