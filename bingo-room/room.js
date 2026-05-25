@@ -35,6 +35,7 @@ let _drawResults  = null   // stored until ceremony ends
 let _pendingBalls = []     // balls received while paused — drained on resume
 let _introPlayed   = false  // prevents intro replaying within same draw cycle
 let _nextDrawTitle = ''     // stored from 'waiting'/'state' for intro speech
+let _curtainFaded  = false  // guards the 00:00 curtain lift — reset each waiting cycle
 
 const _token = localStorage.getItem('bp_token') || ''
 
@@ -94,15 +95,35 @@ function showWaitingPanel(nextDrawTime, nextDrawTitle) {
     return
   }
   document.getElementById('room-nodraw-overlay')?.classList.add('hidden')
+
+  // ── Draw the curtain while waiting for the next draw to start ────────────
+  const blocked = document.getElementById('room-blocked')
+  if (blocked) {
+    const inner = blocked.querySelector('.room-blocked-inner')
+    if (inner) {
+      inner.innerHTML = `
+        <div class="room-blocked-icon">🎰</div>
+        <h2 class="room-blocked-title">${nextDrawTitle || 'Upcoming Draw'}</h2>
+        <p class="room-blocked-msg" style="margin-bottom:4px">Starting in</p>
+        <div id="curtain-countdown-display" style="font-size:64px;font-weight:900;color:#a78bfa;letter-spacing:-.02em;line-height:1;margin:10px 0 6px;font-variant-numeric:tabular-nums;">--:--</div>
+      `
+    }
+    blocked.style.opacity = '1'
+    blocked.classList.remove('hidden')
+  }
+
   const target = new Date(nextDrawTime).getTime()
   function tick() {
     const diff = Math.max(0, target - Date.now())
     const h  = Math.floor(diff / 3_600_000)
     const m  = Math.floor((diff % 3_600_000) / 60_000)
     const s  = Math.floor((diff % 60_000) / 1_000)
-    if (countEl) countEl.textContent = h > 0
+    const timeStr = h > 0
       ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
       : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+    if (countEl) countEl.textContent = timeStr
+    const ccEl = document.getElementById('curtain-countdown-display')
+    if (ccEl) ccEl.textContent = timeStr
   }
   tick()
   _cdTimer = setInterval(tick, 1000)
@@ -572,6 +593,15 @@ setTimeout(() => {
   connectSocket()
 }, 500)
 
+// ── Announcer intro at draw start (shared by curtain-fade and no-curtain paths) ─
+function _sayIntro() {
+  const title = _nextDrawTitle || 'this draw'
+  announcer.sayText(
+    `Welcome to ${title}, I will be calling for you. Let's start!`,
+    () => { paused = false; drainPendingBalls() }
+  )
+}
+
 // ── Socket.io ─────────────────────────────────────────────────────────────
 function connectSocket() {
   const socket = io({ transports: ['websocket', 'polling'] })
@@ -610,6 +640,7 @@ function connectSocket() {
   socket.on('waiting', ({ nextDrawTime, nextDrawTitle, announcer: annType }) => {
     _nextDrawTitle = nextDrawTitle || 'this draw'
     _introPlayed   = false        // allow intro for the new draw
+    _curtainFaded  = false        // allow curtain to lift for the new draw
     if (annType) announcer.setType(annType)
     gsap.to(announcer._el, { opacity: 0, duration: 0.5 })  // hide announcer between draws
     renderPlayerCard()
@@ -617,16 +648,27 @@ function connectSocket() {
     drum.reset(Array.from({ length: 90 }, (_, i) => i + 1))
   })
 
-  // Countdown tick — update fill bar; trigger announcer intro at T-3s
+  // Countdown tick — update fill bar; at T-3 fade in announcer; at T=0 lift curtain
   socket.on('countdown', ({ remaining, total }) => {
     const pct = remaining / total
     if (countdownFill) countdownFill.style.width = (pct * 100) + '%'
 
+    // Keep curtain countdown display in sync with server seconds
+    const ccEl = document.getElementById('curtain-countdown-display')
+    if (ccEl && remaining > 0) {
+      const cm = Math.floor(remaining / 60)
+      const cs = remaining % 60
+      ccEl.textContent = cm > 0
+        ? `${String(cm).padStart(2,'0')}:${String(cs).padStart(2,'0')}`
+        : `00:${String(cs).padStart(2,'0')}`
+    }
+
+    // T-3s: bring announcer on screen so she's already visible before curtain lifts
     if (remaining <= 3 && !_introPlayed) {
       _introPlayed = true
-      paused = true   // queue any balls the server sends during the intro
+      paused = true   // queue any balls the server sends during the curtain transition
 
-      // Fade out the countdown panel
+      // Fade out the room-next-draw panel (behind the curtain, but hide it cleanly)
       const panel = document.getElementById('room-next-draw')
       if (panel && !panel.classList.contains('hidden')) {
         gsap.to(panel, {
@@ -635,22 +677,42 @@ function connectSocket() {
         })
       }
 
-      // Fade in announcer (opacity only — idle y-float already running)
-      gsap.to(announcer._el, {
-        opacity: 1, duration: 0.8, ease: 'power2.out',
-        onComplete: () => {
-          const title = _nextDrawTitle || 'this draw'
-          announcer.sayText(
-            `Welcome to ${title}, I will be calling for you. Let's start!`,
-            () => { paused = false; drainPendingBalls() }
-          )
-        }
-      })
+      // Fade in announcer — she'll be fully on screen before the curtain lifts at 00:00
+      gsap.to(announcer._el, { opacity: 1, duration: 0.8, ease: 'power2.out' })
+    }
+
+    // At 00:00: lift the curtain (announcer already fading in from T-3)
+    if (remaining <= 0 && !_curtainFaded) {
+      _curtainFaded = true
+      const blocked = document.getElementById('room-blocked')
+      if (blocked && !blocked.classList.contains('hidden')) {
+        gsap.to(blocked, {
+          opacity: 0, duration: 1.5, ease: 'power2.in',
+          onComplete: () => {
+            blocked.classList.add('hidden')
+            blocked.style.opacity = ''
+            _sayIntro()
+          }
+        })
+      } else {
+        _sayIntro()
+      }
     }
   })
 
   // A number is drawn — animate ball
   socket.on('number-drawn', ({ number, called }) => {
+    // Safety: if curtain still up when first ball arrives (countdown event missed), lift it now
+    if (!_curtainFaded) {
+      _curtainFaded = true
+      const blocked = document.getElementById('room-blocked')
+      if (blocked && !blocked.classList.contains('hidden')) {
+        gsap.to(blocked, {
+          opacity: 0, duration: 0.8,
+          onComplete: () => { blocked.classList.add('hidden'); blocked.style.opacity = '' }
+        })
+      }
+    }
     if (paused) { _pendingBalls.push({ number, called }); return }
     if (drawing) return
     drawing   = true
@@ -716,6 +778,7 @@ function connectSocket() {
     _drawResults  = null
     _pendingBalls = []
     _introPlayed  = false   // new draw cycle — allow intro at T-3s
+    _curtainFaded = false   // allow curtain to lift for the new draw
     winBannerEl.classList.add('hidden')
     if (lastNumEl) lastNumEl.textContent = '—'
     // Clear any lingering bingo-check highlights on the call card
