@@ -33,12 +33,19 @@ let _socket       = null
 let _cdTimer      = null   // next-draw countdown interval
 let _drawResults  = null   // stored until ceremony ends
 let _pendingBalls = []     // balls received while paused — drained on resume
+let _pendingLineCard = null // set when client detects a line; cleared by prize-awarded
 let _introPlayed   = false  // prevents intro replaying within same draw cycle
 let _nextDrawTitle = ''     // stored from 'waiting'/'state' for intro speech
 let _curtainFaded  = false  // guards the 00:00 curtain lift — reset each waiting cycle
 let _ceremonyActive = false // true while a bingo check ceremony is running; blocks waiting curtain
 
 const _token = localStorage.getItem('bp_token') || ''
+
+// Decode user_id from the JWT payload (no signature verify needed — server owns that)
+function _decodeJwtPayload(token) {
+  try { return JSON.parse(atob(token.split('.')[1])) } catch { return null }
+}
+const _myUserId = _token ? (_decodeJwtPayload(_token)?.user_id ?? null) : null
 
 async function fetchNextDrawTime() {
   try {
@@ -240,10 +247,9 @@ function updateStageScale() {
         el.style.left = Math.round(mRect.left + np.ox * scale) + 'px'
         el.style.top  = Math.round(mRect.top  + np.oy * scale) + 'px'
       } else {
-        // Right-side: anchor near machine right edge, never overflow viewport
-        const rawLeft = Math.round(mRect.right - annW * 0.6)
-        el.style.left = Math.max(0, Math.min(rawLeft, window.innerWidth - annW)) + 'px'
-        el.style.top  = Math.round(mRect.top + np.oy * scale) + 'px'
+        // Right-side: snap to right edge of screen (studio right wing), moved up ~40 natural units
+        el.style.left = Math.max(0, window.innerWidth - annW - 4) + 'px'
+        el.style.top  = Math.round(mRect.top + (np.oy - 40) * scale) + 'px'
       }
       el.style.width  = annW + 'px'
       el.style.height = annH + 'px'
@@ -369,8 +375,9 @@ function checkWins() {
         const nums = rows[ri].filter(n => n !== null)
         if (nums.every(n => calledSet.has(n))) {
           lineWon = true
+          paused = true   // pause immediately; ceremony starts once prize-awarded confirms winner
           _socket?.emit('line')
-          runLineCheck(card, ri)
+          _pendingLineCard = { card, rowIdx: ri }  // ceremony deferred — see prize-awarded handler
           return
         }
       }
@@ -967,11 +974,24 @@ function connectSocket() {
   })
 
   // Broadcast prize announcements to ALL connected clients
-  socket.on('prize-awarded', ({ type, amount }) => {
+  socket.on('prize-awarded', ({ type, amount, user_id }) => {
     if (type === 'line') {
-      if (lineWon) return   // winner already ran local ceremony; or ceremony already started here
-      lineWon = true
-      runRemoteWinCeremony('line', amount)
+      if (_pendingLineCard) {
+        // This client detected a line and is waiting for server confirmation.
+        const { card, rowIdx } = _pendingLineCard
+        _pendingLineCard = null
+        const iWon = _myUserId && String(user_id) === String(_myUserId)
+        if (iWon) {
+          runLineCheck(card, rowIdx)   // personal winner ceremony
+        } else {
+          runRemoteWinCeremony('line', amount)  // someone else won; show observer ceremony
+        }
+      } else if (!lineWon) {
+        // This client didn't detect a line locally — just show the observer ceremony
+        lineWon = true
+        runRemoteWinCeremony('line', amount)
+      }
+      // if lineWon && !_pendingLineCard: we already ran our ceremony, nothing to do
     } else if (type === 'bingo') {
       if (bingoWon) return
       bingoWon = true
@@ -987,6 +1007,7 @@ function connectSocket() {
     paused     = false
     _drawResults    = null
     _pendingBalls   = []
+    _pendingLineCard = null   // clear any deferred line ceremony
     _introPlayed    = false   // new draw cycle — allow intro at T-3s
     _curtainFaded   = false   // allow curtain to lift for the new draw
     _ceremonyActive = false   // reset in case it was still set from a prior ceremony

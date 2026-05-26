@@ -1,7 +1,11 @@
 /* ── Override drum.css body centering for the room layout ── */
+html {
+  height: 100%;
+}
 body {
+  height: 100%;
   align-items: stretch !important;
-  overflow-y: auto;
+  overflow: hidden;   /* only .room-tickets-section scrolls; keeps machine fixed in studio */
 }
 
 /* ── Pre-start countdown banner (over drum) ── */
@@ -156,6 +160,8 @@ body {
   flex-direction: column;
   position: relative;
   z-index: 1;
+  height: calc(var(--real-vh, 100vh) - 52px);  /* fill viewport below topbar */
+  overflow: hidden;                             /* machine area never scrolls */
 }
 
 /* ── Top row: drum + call card side by side ── */
@@ -224,8 +230,11 @@ body {
   font-size: clamp(0.55rem, 1.3vw, 0.78rem) !important;
 }
 
-/* ── Tickets section (below top row) ── */
+/* ── Tickets section (below top row) — only this area scrolls ── */
 .room-tickets-section {
+  flex: 1;
+  min-height: 0;      /* allow flex item to shrink below its content */
+  overflow-y: auto;
   padding: 24px 28px 48px;
   background: var(--room-surface);
   border-top: 1px solid var(--room-border);
