@@ -424,6 +424,7 @@ function buildOverlayTable(card, winRowIdx) {
 
 async function runLineCheck(card, rowIdx) {
   paused = true
+  gsap.to(announcer._el, { opacity: 0, duration: 0.25 })  // hide announcer so it doesn't show over overlay
 
   // ── Step 1: Flash "LINE!" over the drum ──────────────────────────────────
   const flash = document.createElement('div')
@@ -518,6 +519,7 @@ async function runBingoCheck(card) {
   const _ownDrawId = _currentDrawId  // capture now — 'waiting' event may update it during ceremony
   paused = true
   announcer.reset()  // cancel any in-progress number call immediately
+  gsap.to(announcer._el, { opacity: 0, duration: 0.25 })  // hide announcer so it doesn't show over overlay
 
   // ── Step 1: BINGO! flash ─────────────────────────────────────────────────
   const flash = document.createElement('div')
@@ -697,6 +699,7 @@ async function runRemoteWinCeremony(type, amount) {
   if (type === 'bingo') _ceremonyActive = true  // block waiting curtain during bingo ceremony
   const _ownDrawId = _currentDrawId  // capture now — 'waiting' event may update it during ceremony
   paused = true
+  gsap.to(announcer._el, { opacity: 0, duration: 0.25 })  // hide announcer so it doesn't show over overlay
 
   const flash = document.createElement('div')
   flash.id = 'line-flash'
@@ -862,12 +865,12 @@ function connectSocket() {
     _nextDrawTitle = nextDrawTitle || 'this draw'
     _introPlayed   = false        // allow intro for the new draw
     _curtainFaded  = false        // allow curtain to lift for the new draw
-    if (annType) { announcer.setType(annType); updateStageScale() }
     loadCardsForDraw(drawId)
     drum.reset(Array.from({ length: 90 }, (_, i) => i + 1))
     // If a bingo ceremony is actively running, don't interrupt it with the curtain.
-    // The ceremony's own completion (tryShowDrawResults → redirect) handles cleanup.
+    // Defer the announcer type swap too — don't change the character mid-ceremony.
     if (_ceremonyActive) return
+    if (annType) { announcer.setType(annType); updateStageScale() }
     gsap.to(announcer._el, { opacity: 0, duration: 0.5 })  // hide announcer between draws
     renderPlayerCard()
     showWaitingPanel(nextDrawTime, nextDrawTitle)
@@ -888,7 +891,7 @@ function connectSocket() {
         : `00:${String(cs).padStart(2,'0')}`
     }
 
-    // T-3s: bring announcer on screen so she's already visible before curtain lifts
+    // T-3s: queue balls and hide the waiting panel — but keep announcer hidden until curtain lifts
     if (remaining <= 3 && !_introPlayed) {
       _introPlayed = true
       paused = true   // queue any balls the server sends during the curtain transition
@@ -901,12 +904,10 @@ function connectSocket() {
           onComplete: () => { panel.classList.add('hidden'); panel.style.opacity = '' }
         })
       }
-
-      // Fade in announcer — she'll be fully on screen before the curtain lifts at 00:00
-      gsap.to(announcer._el, { opacity: 1, duration: 0.8, ease: 'power2.out' })
+      // Announcer fades in AFTER the curtain lifts (see T=0 block below)
     }
 
-    // At 00:00: lift the curtain (announcer already fading in from T-3)
+    // At 00:00: lift the curtain, then fade in announcer so she never shows over the curtain
     if (remaining <= 0 && !_curtainFaded) {
       _curtainFaded = true
       const blocked = document.getElementById('room-blocked')
@@ -916,10 +917,13 @@ function connectSocket() {
           onComplete: () => {
             blocked.classList.add('hidden')
             blocked.style.opacity = ''
+            gsap.to(announcer._el, { opacity: 1, duration: 0.5, ease: 'power2.out' })
             _sayIntro()
           }
         })
       } else {
+        // No curtain — still fade announcer in cleanly before intro
+        gsap.to(announcer._el, { opacity: 1, duration: 0.5, ease: 'power2.out' })
         _sayIntro()
       }
     }
