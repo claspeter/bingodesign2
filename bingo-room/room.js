@@ -220,16 +220,17 @@ function updateStageScale() {
 
     if (scale >= 0.95) {
       // Desktop — use natural unscaled sizes; position in viewport coordinates
+      const desktopTop = Math.round(mRect.top + np.oy) + 'px'
       if (isCD) {
         // Left-side announcers: offset from machine's left edge by natural ox
         el.style.left   = Math.round(mRect.left + np.ox) + 'px'
-        el.style.top    = np.oy + 'px'
+        el.style.top    = desktopTop
         el.style.width  = np.w + 'px'
         el.style.height = np.h + 'px'
       } else {
         // Right-side announcers: pin to drum column's right edge (avoids call-card overlap)
         el.style.left   = Math.round(colRect.right - np.w - 16) + 'px'
-        el.style.top    = np.oy + 'px'
+        el.style.top    = desktopTop
         el.style.width  = np.w + 'px'
         el.style.height = np.h + 'px'
       }
@@ -278,6 +279,46 @@ function loadCardsForDraw(drawId) {
     }
   } catch {}
   playerCards = null
+  // Nothing in localStorage — ticket may have been bought on another device.
+  // Try fetching from the server in the background and update the UI if found.
+  _refreshCardsFromServer(drawId)
+}
+
+async function _refreshCardsFromServer(drawId) {
+  try {
+    const headers = _token ? { Authorization: 'Bearer ' + _token } : {}
+    const res = await fetch('/api/user-portal/tickets', { headers })
+    if (!res.ok) return
+    const tickets = await res.json()
+    // Filter tickets for this specific draw
+    const drawTickets = tickets.filter(t => String(t.draw_id) === String(drawId))
+    if (!drawTickets.length) return
+    // Build flat card list — preset tickets store card objects with row1/row2/row3
+    const allCards = []
+    let drawTitle = ''
+    for (const t of drawTickets) {
+      try {
+        const parsed = JSON.parse(t.numbers)
+        if (Array.isArray(parsed) && parsed.length && parsed[0]?.row1) {
+          allCards.push(...parsed)
+        }
+      } catch {}
+      if (!drawTitle && t.draw_title) drawTitle = t.draw_title
+    }
+    if (!allCards.length) return
+    // Guard against race: ensure we're still on the same draw
+    if (String(_currentDrawId) !== String(drawId)) return
+    const data = { cards: allCards, drawTitle }
+    // Cache in localStorage for this draw
+    try {
+      const store = JSON.parse(localStorage.getItem('bingoRoomTickets') || '{}')
+      store[String(drawId)] = data
+      localStorage.setItem('bingoRoomTickets', JSON.stringify(store))
+    } catch {}
+    playerCards = data
+    renderPlayerCard()
+    refreshCardMarks()
+  } catch {}
 }
 
 function renderPlayerCard() {
