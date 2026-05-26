@@ -85,13 +85,28 @@ body {
   z-index: 200;
 }
 .room-back {
-  color: var(--room-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(124,58,237,0.18);
+  border: 1px solid rgba(124,58,237,0.45);
+  color: #c4b5fd;
   font-size: 13px;
+  font-weight: 700;
   text-decoration: none;
-  font-weight: 600;
-  transition: color .15s;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
 }
-.room-back:hover { color: var(--room-text); }
+.room-back:hover {
+  background: rgba(124,58,237,0.35);
+  border-color: rgba(124,58,237,0.8);
+  color: #fff;
+}
+@media (max-width: 860px) {
+  .room-back { font-size: 11px; padding: 5px 10px; }
+}
 .room-title {
   font-size: 22px;
   font-weight: 900;
