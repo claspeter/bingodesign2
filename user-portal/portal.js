@@ -203,6 +203,7 @@ async function enterGame() {
   showScreen('screen-game');
   closeSection();
   await loadDraws();
+  loadMyTickets();
 }
 
 function renderTopBar() {
@@ -240,7 +241,6 @@ window.openSection = function(name) {
   const panel = document.getElementById('section-' + name);
   if (panel) { panel.classList.remove('hidden'); panel.classList.add('active'); }
   else { console.warn('openSection: no panel found for', name); }
-  if (name === 'tickets') { try { loadMyTickets(); } catch(e) { console.error('loadMyTickets threw:', e); } }
   if (name === 'schedule') { try { loadSchedule(); } catch(e) { console.error('loadSchedule threw:', e); } }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };

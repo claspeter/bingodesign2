@@ -241,6 +241,26 @@ a.pm-item { color: var(--muted); }
 /* Full-width button (5th item breaks onto its own row and spans both columns) */
 .sbtn-wide { flex: 1 1 100%; max-width: 100%; }
 
+/* ── Inline My Tickets (on game-main) ───────────────────────────────────── */
+.inline-tickets-section {
+  margin: 6px 16px 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+.inline-tickets-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding: 0 2px;
+}
+.inline-tickets-title {
+  font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: .3px;
+}
+.inline-tickets-refresh {
+  background: none; border: none; color: var(--muted); font-size: 18px;
+  cursor: pointer; padding: 2px 6px; border-radius: 8px; transition: color .15s;
+  line-height: 1;
+}
+.inline-tickets-refresh:hover { color: var(--text); }
+
 /* ── Section panels (full-page views) ── */
 .section-panel { display: none; }
 .section-panel.active { display: block; min-height: calc(100vh - 60px); }

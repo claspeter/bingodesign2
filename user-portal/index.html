@@ -8,7 +8,7 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="apple-touch-icon" href="/icon-180.png" />
   <meta name="theme-color" content="#7c3aed" />
-  <link rel="stylesheet" href="portal.css?v=32" />
+  <link rel="stylesheet" href="portal.css?v=33" />
 </head>
 <body>
 
@@ -119,6 +119,15 @@
       <button class="sbtn" onclick="openSection('buy')">🎟 Buy Tickets</button>
       <button class="sbtn" onclick="window.location.href='/bingo-room'">🎯 Bingo Room</button>
     </div>
+
+    <!-- ── My Tickets (inline) ── -->
+    <div class="inline-tickets-section">
+      <div class="inline-tickets-header">
+        <span class="inline-tickets-title">🎟 My Tickets</span>
+        <button class="inline-tickets-refresh" onclick="loadMyTickets()" title="Refresh">↻</button>
+      </div>
+      <div id="myTicketsPanel"><div class="loading-state">Loading…</div></div>
+    </div>
   </div>
 
   <!-- ── SPECIAL DRAWS PANEL ── -->
@@ -170,16 +179,6 @@
     </div>
   </div>
 
-  <!-- ── MY TICKETS PANEL ── -->
-  <div id="section-tickets" class="section-panel">
-    <div class="section-back-bar">
-      <button class="back-btn" onclick="closeSection()">&#8592;</button>
-      <span class="section-title">🗂 My Tickets</span>
-    </div>
-    <div class="panel-inner" id="myTicketsPanel">
-      <div class="loading-state">Loading…</div>
-    </div>
-  </div>
 </div>
 
 <!-- ══ GET POINTS MODAL ═══════════════════════════════════════════════════ -->
@@ -242,6 +241,6 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="portal.js?v=38"></script>
+<script src="portal.js?v=39"></script>
 </body>
 </html>
