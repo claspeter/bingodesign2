@@ -258,7 +258,22 @@ function updateStageScale() {
 }
 
 updateStageScale()
-window.addEventListener('resize', () => { setVh(); updateStageScale() })
+
+// On iOS Safari, scrolling causes the address bar to show/hide which fires 'resize'
+// with only a small innerHeight change and NO innerWidth change. That would reposition
+// the announcer based on scroll-adjusted mRect.top, making her appear to scroll.
+// Fix: only reposition on genuine resizes (viewport width changes, or height changes a lot).
+let _lastResizeW = window.innerWidth
+let _lastResizeH = window.innerHeight
+window.addEventListener('resize', () => {
+  setVh()
+  const dW = Math.abs(window.innerWidth  - _lastResizeW)
+  const dH = Math.abs(window.innerHeight - _lastResizeH)
+  _lastResizeW = window.innerWidth
+  _lastResizeH = window.innerHeight
+  // iOS scroll fires a resize with dW=0, dH≈50. Genuine resize has dW>0 or large dH.
+  if (dW > 0 || dH > 80) updateStageScale()
+})
 
 // ── Load player cards from localStorage for a specific draw ──────────────
 // New format (bingoRoomTickets): { [drawId]: { cards, drawTitle } }

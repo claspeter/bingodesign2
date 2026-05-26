@@ -103,10 +103,12 @@ export class Announcer {
       document.removeEventListener('click',      handler)
       document.removeEventListener('keydown',    handler)
       document.removeEventListener('touchstart', handler)
+      document.removeEventListener('mousemove',  handler)
     }
     document.addEventListener('click',      handler)
     document.addEventListener('keydown',    handler)
     document.addEventListener('touchstart', handler)
+    document.addEventListener('mousemove',  handler, { once: true })  // desktop: unlock on first mouse movement
   }
 
   _build() {
@@ -154,11 +156,17 @@ export class Announcer {
     if (!this._voice) this._voice = pickVoice()
     if (this._voice)  utt.voice = this._voice
     utt.pitch = 1.15; utt.rate = 0.88; utt.volume = 1
-    // Only call onEnd if this utterance is still the current one —
-    // prevents a cancelled utterance's onerror from stopping the next animation
+    // Only call onEnd if this utterance is still the current one
     const done = () => { if (this._speakGen === gen) onEnd() }
-    utt.onend   = done
-    utt.onerror = done
+    // Minimum animation duration: ensures mouth movement is always visible even
+    // when speech synthesis is blocked (e.g. Chrome autoplay policy fires onerror
+    // immediately). Estimate ~380ms per word; min 1200ms.
+    const minMs = Math.max(1200, text.split(/\s+/).length * 380)
+    let minTimer = setTimeout(done, minMs)
+    // If speech ends naturally (earlier than minMs) — clear the fallback and finish
+    utt.onend  = () => { clearTimeout(minTimer); done() }
+    // If speech is blocked/fails — let minTimer drive the animation; stay silent
+    utt.onerror = () => { /* minTimer handles it */ }
     speechSynthesis.speak(utt)
   }
 
