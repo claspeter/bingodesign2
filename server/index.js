@@ -370,9 +370,17 @@ io.on('connection', (socket) => {
   } else if (gamePhase === 'waiting') {
     socket.emit('state', { ...getState(game), phase: 'waiting', nextDrawTime: null, nextDrawTitle: null })
   } else {
+    // Include the NEXT scheduled draw so the "Draw in Progress" curtain
+    // can tell the user when to come back.  getNextScheduledDraw() skips
+    // the running draw (status='running') and returns the next 'scheduled' one.
+    const afterCurrent = getNextScheduledDraw()
     socket.emit('state', {
       ...getState(game), phase: 'drawing',
       drawTitle:       currentDraw?.title ?? '',
+      nextDrawTime:    afterCurrent
+        ? new Date(drawLocalToUtcMs(afterCurrent.draw_date, afterCurrent.draw_time)).toISOString()
+        : null,
+      nextDrawTitle:   afterCurrent?.title ?? null,
       line_prize:      currentDraw?.line_prize ?? 0,
       full_house_prize: currentDraw?.full_house_prize ?? 0,
     })

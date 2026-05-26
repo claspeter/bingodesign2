@@ -81,6 +81,10 @@ function showDrawInProgress(nextDrawTime, nextDrawTitle) {
     blocked.style.opacity = '1'
     blocked.classList.remove('hidden')
   }
+  // CRITICAL: mark curtain as "intentionally shown for mid-draw block".
+  // Without this, the ball-interval countdown handler (remaining <= 0) would
+  // immediately lift the curtain because _curtainFaded is false on fresh page load.
+  _curtainFaded = true
   renderPlayerCard()
 }
 
@@ -106,8 +110,23 @@ function showWaitingPanel(nextDrawTime, nextDrawTitle) {
 
   if (!nextDrawTime) {
     panel.classList.add('hidden')
-    const overlay = document.getElementById('room-nodraw-overlay')
-    if (overlay) overlay.classList.remove('hidden')
+    document.getElementById('room-nodraw-overlay')?.classList.add('hidden')
+    // No next draw — show the full blocking curtain with a clear message.
+    // This keeps the room hidden (nothing to see) and gives the user a back button.
+    const blocked2 = document.getElementById('room-blocked')
+    if (blocked2) {
+      const inner2 = blocked2.querySelector('.room-blocked-inner')
+      if (inner2) {
+        inner2.innerHTML = `
+          <img src="/bingo-room/bm.png" alt="" style="width:120px;height:auto;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
+          <h2 class="room-blocked-title">No Draws Scheduled</h2>
+          <p class="room-blocked-msg">There are no upcoming draws at the moment.<br>Check back soon!</p>
+          <a href="/user-portal" class="room-blocked-btn" style="margin-top:16px">← Back to Portal</a>
+        `
+      }
+      blocked2.style.opacity = '1'
+      blocked2.classList.remove('hidden')
+    }
     return
   }
   document.getElementById('room-nodraw-overlay')?.classList.add('hidden')
