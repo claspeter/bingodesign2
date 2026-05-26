@@ -227,6 +227,7 @@ window.openSection = function(name) {
   });
   const panel = document.getElementById('section-' + name);
   if (panel) { panel.classList.remove('hidden'); panel.classList.add('active'); }
+  if (name === 'tickets') loadMyTickets();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -235,6 +236,128 @@ window.closeSection = function() {
   document.getElementById('game-main').style.display = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+
+// ── My Tickets ────────────────────────────────────────────────────────────
+
+function buildTicketCardHtml(cards, drawLabel) {
+  if (!cards.length) return '<p style="color:var(--text-muted);font-size:13px">No card data available.</p>';
+  return cards.map((card, ci) => {
+    let rows;
+    if (card.row1) {
+      // Preset-card format: {row1, row2, row3, code}
+      rows = [card.row1, card.row2, card.row3];
+    } else if (Array.isArray(card)) {
+      // Flat number array — build a single 3×5 display (won't happen with preset pool but handle gracefully)
+      const nums = card.filter(n => n !== null);
+      rows = [nums.slice(0,5).concat(Array(5).fill(null)).slice(0,5),
+              nums.slice(5,10).concat(Array(5).fill(null)).slice(0,5),
+              nums.slice(10,15).concat(Array(5).fill(null)).slice(0,5)];
+    } else {
+      return '';
+    }
+    const trs = rows.map(row => {
+      const tds = (row || []).map(n =>
+        n == null ? `<td class="mt-blank"></td>` : `<td class="mt-num">${n}</td>`
+      ).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+    const codeStr = card.code ? ` · #${card.code}` : '';
+    return `
+      <div class="mt-card">
+        <div class="mt-card-label">Card ${ci + 1}${codeStr}</div>
+        <table class="mt-grid">${trs}</table>
+      </div>`;
+  }).join('');
+}
+
+async function loadMyTickets() {
+  const panel = document.getElementById('myTicketsPanel');
+  if (!panel) return;
+  panel.innerHTML = '<div class="loading-state">Loading…</div>';
+
+  try {
+    const { ok, data } = await apiFetch('/api/user-portal/tickets');
+    let rows = (ok && Array.isArray(data)) ? data : [];
+
+    // Group by draw
+    const groups = {};
+    rows.forEach(t => {
+      const key = t.draw_id || t.id;
+      if (!groups[key]) {
+        groups[key] = {
+          draw_title: t.draw_title || 'Bingo Draw',
+          draw_date:  t.draw_date,
+          draw_time:  t.draw_time,
+          draw_status: t.draw_status,
+          cards: []
+        };
+      }
+      // numbers can be JSON string or already parsed
+      let nums = t.numbers;
+      if (typeof nums === 'string') { try { nums = JSON.parse(nums); } catch(_){} }
+      if (Array.isArray(nums)) {
+        groups[key].cards.push(...nums);   // preset: [{row1,row2,row3,code},...] or flat numbers
+      }
+    });
+
+    // If server returned nothing, fall back to localStorage
+    if (!Object.keys(groups).length) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('bingoRoomTicket') || '{}');
+        if (stored.cards && stored.cards.length) {
+          groups['local'] = {
+            draw_title: stored.drawTitle || 'Current Draw',
+            cards: stored.cards
+          };
+        }
+      } catch(_) {}
+    }
+
+    const keys = Object.keys(groups);
+    if (!keys.length) {
+      panel.innerHTML = `
+        <div class="my-tickets-empty">
+          <div class="mte-icon">🎟️</div>
+          <p>You haven't bought any tickets yet.</p>
+          <button class="btn btn-primary" onclick="openSection('buy')">Buy Tickets →</button>
+        </div>`;
+      return;
+    }
+
+    panel.innerHTML = keys.map(key => {
+      const g    = groups[key];
+      const when = g.draw_date && g.draw_time
+        ? new Date(g.draw_date + 'T' + g.draw_time + '+03:00')
+            .toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+        : '';
+      const statusBadge = g.draw_status === 'active'
+        ? `<span class="mt-badge mt-badge-live">🔴 Live</span>`
+        : g.draw_status === 'scheduled'
+        ? `<span class="mt-badge mt-badge-soon">⏰ Upcoming</span>`
+        : `<span class="mt-badge mt-badge-done">✓ Done</span>`;
+
+      const cardsHtml = buildTicketCardHtml(g.cards, g.draw_title);
+      return `
+        <div class="mt-group">
+          <div class="mt-draw-header">
+            <span class="mt-draw-title">${g.draw_title}</span>
+            ${statusBadge}
+          </div>
+          ${when ? `<div class="mt-draw-when">📅 ${when}</div>` : ''}
+          <div class="mt-cards">${cardsHtml}</div>
+        </div>`;
+    }).join('');
+
+    panel.innerHTML += `
+      <div style="text-align:center;padding:20px 0 8px">
+        <button class="btn btn-primary" onclick="window.location.href='/bingo-room'">🎯 Go to Bingo Room</button>
+      </div>`;
+
+  } catch (err) {
+    panel.innerHTML = '<div class="loading-state">Could not load tickets. Please try again.</div>';
+    console.error('loadMyTickets error', err);
+  }
+}
 
 // ── Draws data ────────────────────────────────────────────────────────────
 

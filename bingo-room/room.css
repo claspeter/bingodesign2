@@ -82,7 +82,7 @@ body {
   height: 52px;
   position: sticky;
   top: 0;
-  z-index: 200;
+  z-index: 1100;   /* above the curtain overlay (z:1000) so back btn is always reachable */
 }
 .room-back {
   display: inline-flex;
@@ -548,20 +548,22 @@ body {
     justify-content: flex-start;
   }
 
-  /* Callcard becomes a compact strip below the drum */
+  /* Callcard becomes a strip below the drum — full grid visible, user scrolls */
   .room-callcard-col {
     flex: 0 0 auto;
     width: 100%;
     border-left: none;
     border-top: 1px solid var(--room-border);
-    padding: 10px 16px;
-    max-height: 180px;
-    overflow-y: auto;
+    padding: 10px 12px;
   }
-  /* Keep call-card grid from expanding to full phone width */
+  /* Keep call-card from stretching across the full phone width */
   .room-callcard-col .call-card {
-    max-width: 380px;
+    max-width: 340px;
     margin: 0 auto;
+  }
+  /* Tighter gap so the 9-row grid stays compact */
+  .room-callcard-col .call-card-grid {
+    gap: 3px;
   }
 
   /* Win overlays that reserved right-side space for the callcard */
