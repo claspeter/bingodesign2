@@ -99,7 +99,8 @@ function showDrawInProgress(nextDrawTime, nextDrawTitle) {
 function hideWaitingBanner() {
   const banner = document.getElementById('room-waiting-banner')
   if (banner) banner.classList.add('hidden')
-  document.getElementById('room-blocked').classList.add('hidden')
+  // NOTE: do NOT hide room-blocked here — the countdown T=0 handler lifts
+  // the curtain via gsap fade-out so the announcer appears cleanly after it.
   document.querySelector('.room-layout').style.display = ''
 }
 
@@ -496,6 +497,8 @@ async function runLineCheck(card, rowIdx) {
   overlay.remove()
 
   // ── Announcer says "Continuing" then resume ──────────────────────────────
+  // Fade her back in — she was hidden at ceremony start so the overlay was unobstructed
+  gsap.to(announcer._el, { opacity: 1, duration: 0.4, ease: 'power2.out' })
   announcer.sayText('Continuing.', () => { paused = false; drainPendingBalls() })
 }
 
@@ -743,6 +746,8 @@ async function runRemoteWinCeremony(type, amount) {
   )
 
   if (type === 'line') {
+    // Fade her back in — hidden at ceremony start so overlay was unobstructed
+    gsap.to(announcer._el, { opacity: 1, duration: 0.4, ease: 'power2.out' })
     announcer.sayText('Continuing.', () => { paused = false; drainPendingBalls() })
   } else {
     paused = false
@@ -1044,7 +1049,7 @@ function connectSocket() {
     loadCardsForDraw(drawId ?? _currentDrawId)
     renderPlayerCard()
     drum.reset(Array.from({ length: 90 }, (_, i) => i + 1))
-    // Fade announcer out — intro will bring her back at T-3s of new countdown
+    // Fade announcer out — she fades back in at T=0 when the curtain lifts
     gsap.to(announcer._el, { opacity: 0, duration: 0.5 })
   })
 }

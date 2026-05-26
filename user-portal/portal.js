@@ -242,7 +242,7 @@ window.closeSection = function() {
 // Shows draw name + ticket count per draw — no card grids (kept lightweight).
 // Full card grids are visible in the Bingo Room itself.
 
-async function loadMyTickets() {
+window.loadMyTickets = async function loadMyTickets() {
   const panel = document.getElementById('myTicketsPanel');
   if (!panel) return;
   panel.innerHTML = '<div class="loading-state">Loading…</div>';
@@ -269,11 +269,14 @@ async function loadMyTickets() {
 
     const keys = Object.keys(groups);
     if (!keys.length) {
+      const who = currentUser?.name ? ` for <strong>${currentUser.name}</strong>` : '';
       panel.innerHTML = `
         <div class="my-tickets-empty">
           <div class="mte-icon">🎟️</div>
-          <p>You haven't bought any tickets yet.</p>
-          <button class="btn btn-primary" onclick="openSection('buy')">Buy Tickets →</button>
+          <p>No tickets found${who}.</p>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:20px">If you bought tickets on another device, they may appear here after a refresh.</p>
+          <button class="btn btn-primary" onclick="loadMyTickets()">↻ Refresh</button>
+          <button class="btn btn-outline" style="margin-top:10px" onclick="openSection('buy')">Buy Tickets →</button>
         </div>`;
       return;
     }
