@@ -1,6 +1,9 @@
 import { gsap } from 'gsap'
 
 export function animateBallDrop(ballEl, color) {
+  // Clear any stale inline background (e.g. set by CallCard.restore) so the
+  // CSS radial-gradient definition shows through — only tint via glow/border.
+  ballEl.style.background = ''
   gsap.set(ballEl, {
     color,
     borderColor: color,

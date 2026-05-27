@@ -94,11 +94,17 @@ export class CallCard {
     const lastCell = this.containerEl.querySelector(`.cc-cell[data-n="${last}"]`)
     if (lastCell) lastCell.classList.add('cc-last')
 
-    // Ball display — show last number without drop animation
+    // Ball display — show last number without drop animation.
+    // Mirror animateBallDrop's styling (no background override — let CSS gradient show).
     const numEl = this.ballEl.querySelector('.ball-number')
     if (numEl) numEl.textContent = last
     const color = COL_COLORS[getColumn(last)]
-    if (color) this.ballEl.style.background = color
+    if (color) {
+      this.ballEl.style.background  = ''   // clear any stale inline bg
+      this.ballEl.style.color       = color
+      this.ballEl.style.borderColor = color
+      this.ballEl.style.boxShadow   = `0 0 40px ${color}, 0 0 80px ${color}40, inset 0 -4px 20px rgba(0,0,0,0.4)`
+    }
 
     // Recent calls strip — last up to 10 in reverse draw order (most recent first)
     const recent = numbers.slice(-RECENT_MAX).reverse()

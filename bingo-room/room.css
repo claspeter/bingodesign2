@@ -164,6 +164,15 @@ body {
   flex-direction: row;
   flex-shrink: 0;
   border-bottom: 1px solid var(--room-border);
+  /* Stick below the topbar so the machine + call card stay visible while
+     the user scrolls down to see their tickets. The announcer is
+     position:fixed and positioned relative to the machine via
+     getBoundingClientRect(), so keeping the machine at a stable viewport
+     position (top:52px when stuck) ensures she never drifts. */
+  position: sticky;
+  top: 52px;       /* height of .room-topbar */
+  z-index: 900;    /* below curtain (1000) but above ticket content */
+  background: var(--room-bg);
 }
 
 .room-drum-col {

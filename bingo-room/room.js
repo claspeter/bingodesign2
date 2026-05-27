@@ -166,12 +166,16 @@ function showWaitingPanel(nextDrawTime, nextDrawTitle) {
       ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
       : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
     if (countEl) countEl.textContent = timeStr
-    const ccEl = document.getElementById('curtain-countdown-display')
-    if (ccEl) ccEl.textContent = timeStr
+    // NOTE: curtain-countdown-display is NOT updated here — only the server's
+    // 'countdown' socket event writes to it to avoid clock-skew double-update.
   }
   tick()
   _cdTimer = setInterval(tick, 1000)
 }
+// NOTE: curtain-countdown-display is intentionally NOT updated by the local
+// _cdTimer above — only server 'countdown' socket events write to it. This
+// prevents the display jumping back to a higher number when the client clock
+// is a few seconds ahead of the server clock.
 
 function hideWaitingPanel() {
   clearInterval(_cdTimer)
@@ -1003,10 +1007,13 @@ function connectSocket() {
 
   // A number is drawn — animate ball
   socket.on('number-drawn', ({ number, called }) => {
-    // Safety: if countdown never fired remaining=0, the curtain is still up and paused is still
-    // true. Lift the curtain, fade in announcer and unpause so the draw can proceed.
+    // Safety: first ball arrives before countdown reaches remaining=0 (server timer
+    // race) — the curtain is still up. Lift it and play the intro speech so the
+    // announcer always introduces herself at draw start.
     if (!_curtainFaded) {
       _curtainFaded = true
+      _introPlayed  = true   // prevent T-3 block from pausing again after this
+      paused        = true   // queue this ball until intro finishes
       const blocked = document.getElementById('room-blocked')
       if (blocked && !blocked.classList.contains('hidden')) {
         gsap.to(blocked, {
@@ -1015,14 +1022,13 @@ function connectSocket() {
             blocked.classList.add('hidden')
             blocked.style.opacity = ''
             gsap.to(announcer._el, { opacity: 1, duration: 0.5, ease: 'power2.out' })
-            paused = false
-            drainPendingBalls()
+            _sayIntro()   // callback: paused=false; drainPendingBalls()
           }
         })
       } else {
-        // No curtain to lift — still show the announcer
+        // No curtain — fade announcer in and play intro
         gsap.to(announcer._el, { opacity: 1, duration: 0.5, ease: 'power2.out' })
-        paused = false
+        _sayIntro()
       }
     }
     if (paused) { _pendingBalls.push({ number, called }); return }
