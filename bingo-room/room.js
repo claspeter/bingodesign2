@@ -827,7 +827,7 @@ function _enterMidDraw(calledCount, annType) {
   _curtainFaded = true   // no curtain to fade
   _introPlayed  = true   // suppress the T-3s paused=true / curtain-lift path for this draw
   paused        = false
-  drawing       = true
+  drawing       = false  // drum is idle — next number-drawn event must not be skipped
 
   // Dismiss the blocking curtain if it snuck up
   const blocked = document.getElementById('room-blocked')
