@@ -172,7 +172,9 @@ body {
   position: sticky;
   top: 52px;       /* height of .room-topbar */
   z-index: 900;    /* below curtain (1000) but above ticket content */
-  background: var(--room-bg);
+  /* No solid background — studio-bg.jpg (position:fixed) must show through.
+     A subtle tint is enough to prevent ticket content bleeding through on scroll. */
+  background: rgba(8, 8, 18, 0.15);
 }
 
 .room-drum-col {
