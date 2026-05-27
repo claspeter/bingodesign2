@@ -340,6 +340,14 @@ async function _refreshCardsFromServer(drawId) {
     playerCards = data
     renderPlayerCard()
     refreshCardMarks()
+
+    // If the player joined mid-draw and the curtain is still up (no cached ticket),
+    // lift it now that we've confirmed they have a ticket on the server.
+    const blocked = document.getElementById('room-blocked')
+    const isBlocked = blocked && !blocked.classList.contains('hidden')
+    if (isBlocked && calledSet.size > 0) {
+      _enterMidDraw(calledSet.size)
+    }
   } catch {}
 }
 
@@ -813,6 +821,46 @@ function showWin(text, type) {
   } catch (_) { /* iOS/unsupported — rotate overlay shown via CSS */ }
 })()
 
+// ── Mid-draw entry: player has tickets for the running draw ───────────────
+// Called when (re-)joining during a live draw instead of showing the curtain.
+function _enterMidDraw(calledCount, annType) {
+  _curtainFaded = true   // no curtain to fade
+  paused        = false
+  drawing       = true
+
+  // Dismiss the blocking curtain if it snuck up
+  const blocked = document.getElementById('room-blocked')
+  if (blocked) { blocked.classList.add('hidden'); blocked.style.opacity = '' }
+
+  // Restore the room layout in case it was hidden
+  const layout = document.querySelector('.room-layout')
+  if (layout) layout.style.display = ''
+
+  // Set announcer type (suppress speech mid-draw — just show her silently)
+  if (annType) { announcer.setType(annType); updateStageScale() }
+  gsap.set(announcer._el, { opacity: 1 })
+
+  // Render cards with already-called numbers marked
+  renderPlayerCard()
+  refreshCardMarks()
+  checkWins()
+
+  // Update status bar
+  if (statusTextEl) statusTextEl.textContent = 'Live'
+  if (liveDot)      liveDot.className = 'live-dot on'
+
+  // Show the catch-up banner and auto-dismiss after 8 s
+  const banner = document.getElementById('room-midraw-banner')
+  if (banner) {
+    const txt = banner.querySelector('.rmb-text')
+    if (txt) txt.textContent = calledCount > 0
+      ? `Draw in progress — ${calledCount} ball${calledCount !== 1 ? 's' : ''} already called and marked on your ticket`
+      : 'Draw in progress — your ticket is ready'
+    banner.classList.remove('hidden')
+    setTimeout(() => banner.classList.add('hidden'), 8000)
+  }
+}
+
 // ── Boot drum ─────────────────────────────────────────────────────────────
 setTimeout(() => {
   drum.init(Array.from({ length: 90 }, (_, i) => i + 1))
@@ -857,7 +905,15 @@ function connectSocket() {
     // phase === 'drawing'
     loadCardsForDraw(drawId)
     if (called.length > 0 && !gameOver) {
-      showDrawInProgress(nextDrawTime, nextDrawTitle)
+      if (playerCards) {
+        // Player has tickets for this draw — let them straight in with called numbers pre-marked
+        _enterMidDraw(called.length, annType)
+      } else {
+        // No cached tickets yet — show curtain while server fetch runs in background.
+        // _refreshCardsFromServer (kicked off inside loadCardsForDraw) will lift
+        // the curtain and call _enterMidDraw if it finds tickets on the server.
+        showDrawInProgress(nextDrawTime, nextDrawTitle)
+      }
       return
     }
     refreshCardMarks()

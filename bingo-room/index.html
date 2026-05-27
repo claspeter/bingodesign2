@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/bingo-room/drum.css?v=2">
-  <link rel="stylesheet" href="/bingo-room/room.css?v=2">
+  <link rel="stylesheet" href="/bingo-room/room.css?v=3">
   <script type="importmap">
   {
     "imports": {
@@ -181,6 +181,12 @@
         <span class="rwb-text">A draw cycle is in progress — your cards are ready for the next draw</span>
       </div>
 
+      <!-- mid-draw rejoin banner — shown when player has tickets and joins/rejoins during a live draw -->
+      <div id="room-midraw-banner" class="room-midraw-banner hidden">
+        <span class="rmb-icon">🔴</span>
+        <span class="rmb-text">Draw in progress — called numbers are already marked on your ticket</span>
+      </div>
+
       <!-- win notification (top of tickets area) -->
       <div id="room-win-banner" class="room-win-banner hidden"></div>
 
@@ -234,6 +240,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/bingo-room/room.js?v=5"></script>
+  <script type="module" src="/bingo-room/room.js?v=6"></script>
 </body>
 </html>
