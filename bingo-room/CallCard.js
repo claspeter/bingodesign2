@@ -75,6 +75,42 @@ export class CallCard {
     gsap.fromTo(chip, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'back.out(1.7)' })
   }
 
+  // Silently restore all already-called numbers (no animation) — used when
+  // re-joining a draw mid-way through. numbers should be in draw order.
+  restore(numbers) {
+    if (!numbers || !numbers.length) return
+    this.called = new Set(numbers)
+    const last  = numbers[numbers.length - 1]
+    this.lastCalled = last
+
+    // Counter
+    this._countEl.textContent = this.called.size
+
+    // Mark every called cell; highlight the most recent one
+    numbers.forEach(n => {
+      const cell = this.containerEl.querySelector(`.cc-cell[data-n="${n}"]`)
+      if (cell) cell.classList.add('cc-called')
+    })
+    const lastCell = this.containerEl.querySelector(`.cc-cell[data-n="${last}"]`)
+    if (lastCell) lastCell.classList.add('cc-last')
+
+    // Ball display — show last number without drop animation
+    const numEl = this.ballEl.querySelector('.ball-number')
+    if (numEl) numEl.textContent = last
+    const color = COL_COLORS[getColumn(last)]
+    if (color) this.ballEl.style.background = color
+
+    // Recent calls strip — last up to 10 in reverse draw order (most recent first)
+    const recent = numbers.slice(-RECENT_MAX).reverse()
+    this._recentEl.innerHTML = ''
+    recent.forEach(n => {
+      const chip = document.createElement('div')
+      chip.className = 'cc-recent-chip'
+      chip.textContent = n
+      this._recentEl.appendChild(chip)
+    })
+  }
+
   reset() {
     this.called.clear()
     this.lastCalled = null

@@ -841,6 +841,9 @@ function _enterMidDraw(calledCount, annType) {
   if (annType) { announcer.setType(annType); updateStageScale() }
   gsap.set(announcer._el, { opacity: 1 })
 
+  // Restore the called-numbers board silently (no animation)
+  if (calledSet.size > 0) callCard.restore(Array.from(calledSet))
+
   // Render cards with already-called numbers marked
   renderPlayerCard()
   refreshCardMarks()
