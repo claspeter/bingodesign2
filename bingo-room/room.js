@@ -900,7 +900,7 @@ function connectSocket() {
   })
 
   // Initial state on connect
-  socket.on('state', ({ called, gameOver, phase, drawId, nextDrawTime, nextDrawTitle, announcer: annType }) => {
+  socket.on('state', ({ called, gameOver, phase, drawId, nextDrawTime, nextDrawTitle, announcer: annType, linePrizeAwarded: lpa, bingoPrizeAwarded: bpa }) => {
     calledSet = new Set(called)
     if (phase === 'waiting') {
       _nextDrawTitle = nextDrawTitle || 'this draw'
@@ -910,7 +910,10 @@ function connectSocket() {
       showWaitingPanel(nextDrawTime, nextDrawTitle)
       return
     }
-    // phase === 'drawing'
+    // phase === 'drawing' — initialise win flags from server so checkWins()
+    // doesn't false-positive on already-awarded prizes when rejoining mid-draw
+    lineWon  = lpa ?? false
+    bingoWon = bpa ?? false
     loadCardsForDraw(drawId)
     if (called.length > 0 && !gameOver) {
       if (playerCards) {

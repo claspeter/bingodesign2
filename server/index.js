@@ -398,15 +398,17 @@ io.on('connection', (socket) => {
     const afterCurrent = getNextScheduledDraw()
     socket.emit('state', {
       ...getState(game), phase: 'drawing',
-      drawId:          currentDraw?.id ?? null,
-      drawTitle:       currentDraw?.title ?? '',
-      announcer:       currentDraw?.announcer ?? null,
-      nextDrawTime:    afterCurrent
+      drawId:            currentDraw?.id ?? null,
+      drawTitle:         currentDraw?.title ?? '',
+      announcer:         currentDraw?.announcer ?? null,
+      linePrizeAwarded:  linePrizeAwarded,
+      bingoPrizeAwarded: bingoPrizeAwarded,
+      nextDrawTime:      afterCurrent
         ? new Date(drawLocalToUtcMs(afterCurrent.draw_date, afterCurrent.draw_time)).toISOString()
         : null,
-      nextDrawTitle:   afterCurrent?.title ?? null,
-      line_prize:      currentDraw?.line_prize ?? 0,
-      full_house_prize: currentDraw?.full_house_prize ?? 0,
+      nextDrawTitle:     afterCurrent?.title ?? null,
+      line_prize:        currentDraw?.line_prize ?? 0,
+      full_house_prize:  currentDraw?.full_house_prize ?? 0,
     })
   }
 
