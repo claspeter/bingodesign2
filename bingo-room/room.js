@@ -219,6 +219,59 @@ function _announcerNaturalPos() {
   return POS[announcer._type] ?? POS.a
 }
 
+// ── Announcer positioning ─────────────────────────────────────────────────
+// Extracted so it can be called from both updateStageScale() and the scroll
+// listener. The announcer is position:fixed so its viewport coords must be
+// re-derived whenever the machine moves (resize OR scroll on mobile).
+function _positionAnnouncer(scale) {
+  const np = _announcerNaturalPos()
+  if (!np || !announcer?._el) return
+  const machine = document.getElementById('lottery-machine')
+  const drumCol = document.querySelector('.room-drum-col')
+  if (!machine || !drumCol) return
+
+  const mRect   = machine.getBoundingClientRect()
+  const colRect = drumCol.getBoundingClientRect()
+  const el      = announcer._el
+  const isLeft  = np.side === 'left'
+  const ms      = (scale < 0.95 && np.ms) ? np.ms : 1
+  const annW    = Math.round(np.w * scale * ms)
+  const annH    = Math.round(np.h * scale * ms)
+  const dx      = np.dx ?? 0
+
+  if (scale >= 0.95) {
+    // Desktop — use natural unscaled sizes; position in viewport coordinates
+    const desktopTop = Math.round(mRect.top + np.oy) + 'px'
+    if (isLeft) {
+      el.style.left   = Math.round(mRect.left + np.ox + dx) + 'px'
+      el.style.top    = desktopTop
+      el.style.width  = np.w + 'px'
+      el.style.height = np.h + 'px'
+    } else {
+      // Right-side: pin to drum column's right edge (avoids call-card overlap)
+      el.style.left   = Math.round(colRect.right - np.w - 16 + dx) + 'px'
+      el.style.top    = desktopTop
+      el.style.width  = np.w + 'px'
+      el.style.height = np.h + 'px'
+    }
+  } else {
+    // Mobile — scale relative to machine rect
+    if (isLeft) {
+      el.style.left = Math.round(mRect.left + np.ox * scale + dx * scale) + 'px'
+      el.style.top  = Math.round(mRect.top  + np.oy * scale) + 'px'
+    } else {
+      // Right-side: feet near machine base, clamped to viewport
+      el.style.left = Math.round(mRect.right + 4 + dx * scale) + 'px'
+      el.style.top  = Math.round(Math.min(
+        mRect.bottom - annH * 1.1,
+        window.innerHeight - annH - 4
+      )) + 'px'
+    }
+    el.style.width  = annW + 'px'
+    el.style.height = annH + 'px'
+  }
+}
+
 function updateStageScale() {
   const drumCol = document.querySelector('.room-drum-col')
   const machine = document.getElementById('lottery-machine')
@@ -226,9 +279,9 @@ function updateStageScale() {
   if (!drumCol || !machine || !scaler) return
 
   // Scale constrained by available width AND height (minus 52px topbar)
-  const availW   = drumCol.clientWidth
-  const availH   = Math.max(1, window.innerHeight - 52)   // guard against tiny window
-  const scale    = Math.max(0.3, Math.min(1, availW / 580, availH / 460))
+  const availW = drumCol.clientWidth
+  const availH = Math.max(1, window.innerHeight - 52)
+  const scale  = Math.max(0.3, Math.min(1, availW / 580, availH / 460))
 
   document.documentElement.style.setProperty('--stage-scale', scale)
   scaler.style.width  = Math.round(580 * scale) + 'px'
@@ -236,69 +289,23 @@ function updateStageScale() {
   scaler.style.marginLeft = ''
 
   // Reposition the announcer after layout settles (position:fixed, viewport coords)
-  requestAnimationFrame(() => {
-    const np = _announcerNaturalPos()
-    if (!np || !announcer?._el) return
-    const mRect   = machine.getBoundingClientRect()
-    const colRect = drumCol.getBoundingClientRect()
-    const el      = announcer._el
-    const isLeft  = np.side === 'left'
-    const ms      = (scale < 0.95 && np.ms) ? np.ms : 1  // mobile-only size multiplier
-    const annW    = Math.round(np.w * scale * ms)
-    const annH    = Math.round(np.h * scale * ms)
-    const dx      = np.dx ?? 0   // per-type horizontal fine-tune (negative = left)
-
-    if (scale >= 0.95) {
-      // Desktop — use natural unscaled sizes; position in viewport coordinates
-      const desktopTop = Math.round(mRect.top + np.oy) + 'px'
-      if (isLeft) {
-        // Left-side announcers: offset from machine's left edge by natural ox
-        el.style.left   = Math.round(mRect.left + np.ox + dx) + 'px'
-        el.style.top    = desktopTop
-        el.style.width  = np.w + 'px'
-        el.style.height = np.h + 'px'
-      } else {
-        // Right-side announcers: pin to drum column's right edge (avoids call-card overlap)
-        el.style.left   = Math.round(colRect.right - np.w - 16 + dx) + 'px'
-        el.style.top    = desktopTop
-        el.style.width  = np.w + 'px'
-        el.style.height = np.h + 'px'
-      }
-    } else {
-      // Mobile / small screen — scale relative to machine rect
-      if (isLeft) {
-        el.style.left = Math.round(mRect.left + np.ox * scale + dx * scale) + 'px'
-        el.style.top  = Math.round(mRect.top  + np.oy * scale) + 'px'
-      } else {
-        // Right-side: sit just to the right of the machine, feet near machine base
-        // Factor 1.1 moves her up so feet are above the viewport bottom edge;
-        // clamp ensures she never extends below the visible screen area.
-        el.style.left = Math.round(mRect.right + 4 + dx * scale) + 'px'
-        el.style.top  = Math.round(Math.min(
-          mRect.bottom - annH * 1.1,
-          window.innerHeight - annH - 4
-        )) + 'px'
-      }
-      el.style.width  = annW + 'px'
-      el.style.height = annH + 'px'
-    }
-
-    // On mobile the machine is position:fixed, so .room-layout needs
-    // padding-top to push the scrollable content (callcard, tickets) below it.
-    // On desktop clear any leftover mobile padding.
-    const rLayout = document.querySelector('.room-layout')
-    if (rLayout) {
-      if (scale < 0.95) {
-        const rTop = document.querySelector('.room-top')
-        rLayout.style.paddingTop = rTop
-          ? Math.round(rTop.getBoundingClientRect().height) + 'px'
-          : ''
-      } else {
-        rLayout.style.paddingTop = ''
-      }
-    }
-  })
+  requestAnimationFrame(() => _positionAnnouncer(scale))
 }
+
+// On mobile the machine scrolls with page content; re-pin the announcer
+// (position:fixed) on every scroll tick so she tracks the machine.
+// Throttled to one rAF per scroll event to avoid layout thrashing.
+let _scrollRafId = null
+window.addEventListener('scroll', () => {
+  if (_scrollRafId) return
+  _scrollRafId = requestAnimationFrame(() => {
+    _scrollRafId = null
+    const scale = parseFloat(
+      document.documentElement.style.getPropertyValue('--stage-scale')
+    ) || 1
+    if (scale < 0.95) _positionAnnouncer(scale)
+  })
+}, { passive: true })
 
 updateStageScale()
 

@@ -573,15 +573,12 @@ body {
 
 /* ── Mobile responsive layout ─────────────────────────────────────────────── */
 @media (max-width: 860px) {
-  /* Pin the drum / machine to the top of the viewport so it doesn't
-     scroll away when the user scrolls down to see the call card or tickets.
-     The announcer is already position:fixed, so it follows automatically.
-     JS in updateStageScale() adds matching padding-top to .room-layout. */
+  /* On mobile the machine scrolls naturally with all page content so
+     nothing appears to "sink" as the user scrolls. Override the global
+     sticky so room-top is in normal document flow. The announcer
+     (position:fixed) is re-pinned every scroll frame by a listener in room.js. */
   .room-top {
-    position: fixed;
-    top: 52px;
-    left: 0;
-    right: 0;
+    position: relative;
     flex-direction: column;
   }
 
