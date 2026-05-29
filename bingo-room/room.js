@@ -37,6 +37,7 @@ let _pendingLineCard = null // set when client detects a line; cleared by prize-
 let _introPlayed   = false  // prevents intro replaying within same draw cycle
 let _nextDrawTitle = ''     // stored from 'waiting'/'state' for intro speech
 let _curtainFaded  = false  // guards the 00:00 curtain lift — reset each waiting cycle
+let _allowedToWatch = false // true when user was in room before draw start; cleared on page reload
 let _ceremonyActive = false // true while a bingo check ceremony is running; blocks waiting curtain
 let _firstBallCalled = false  // gates the walk-in zoom — fires once per draw
 let _announcerZoomed = false  // true while announcer is at zoom scale
@@ -999,15 +1000,18 @@ function _enterMidDraw(calledCount, annType) {
   if (statusTextEl) statusTextEl.textContent = 'Live'
   if (liveDot)      liveDot.className = 'live-dot on'
 
-  // Show the catch-up banner and auto-dismiss after 8 s
-  const banner = document.getElementById('room-midraw-banner')
-  if (banner) {
-    const txt = banner.querySelector('.rmb-text')
-    if (txt) txt.textContent = calledCount > 0
-      ? `Draw in progress — ${calledCount} ball${calledCount !== 1 ? 's' : ''} already called and marked on your ticket`
-      : 'Draw in progress — your ticket is ready'
-    banner.classList.remove('hidden')
-    setTimeout(() => banner.classList.add('hidden'), 8000)
+  // Show the catch-up banner only for users who have a ticket (ticketless watchers
+  // don't need "X balls marked on your ticket" since they have no ticket)
+  if (playerCards) {
+    const banner = document.getElementById('room-midraw-banner')
+    if (banner) {
+      const txt = banner.querySelector('.rmb-text')
+      if (txt) txt.textContent = calledCount > 0
+        ? `Draw in progress — ${calledCount} ball${calledCount !== 1 ? 's' : ''} already called and marked on your ticket`
+        : 'Draw in progress — your ticket is ready'
+      banner.classList.remove('hidden')
+      setTimeout(() => banner.classList.add('hidden'), 8000)
+    }
   }
 }
 
@@ -1046,6 +1050,7 @@ function connectSocket() {
     calledSet = new Set(called)
     if (phase === 'waiting') {
       _nextDrawTitle = nextDrawTitle || 'this draw'
+      _allowedToWatch = true   // user is in room before draw start — allow them to watch
       if (annType) { announcer.setType(annType); updateStageScale() }
       loadCardsForDraw(drawId)   // drawId is the upcoming draw here
       renderPlayerCard()
@@ -1059,10 +1064,14 @@ function connectSocket() {
     loadCardsForDraw(drawId)
     if (called.length > 0 && !gameOver) {
       if (playerCards) {
-        // Player has tickets for this draw — let them straight in with called numbers pre-marked
+        // Player has tickets — let them straight in with called numbers pre-marked
+        _enterMidDraw(called.length, annType)
+      } else if (_allowedToWatch) {
+        // No ticket but was in room before start (or socket reconnect mid-draw) —
+        // allow watching; they can see the machine and call card but not a ticket.
         _enterMidDraw(called.length, annType)
       } else {
-        // No cached tickets yet — show curtain while server fetch runs in background.
+        // Joined after start with no ticket (or left and came back) — show curtain.
         // _refreshCardsFromServer (kicked off inside loadCardsForDraw) will lift
         // the curtain and call _enterMidDraw if it finds tickets on the server.
         showDrawInProgress(nextDrawTime, nextDrawTitle)
@@ -1080,6 +1089,7 @@ function connectSocket() {
     _introPlayed     = false        // allow intro for the new draw
     _curtainFaded    = false        // allow curtain to lift for the new draw
     _firstBallCalled = false        // allow zoom-in for the new draw
+    _allowedToWatch  = true         // user is still in room — pre-cleared for next draw
     if (_announcerZoomed) {
       _announcerZoomed = false
       gsap.set(announcer._el, { scale: 1, transformOrigin: 'center bottom' })
