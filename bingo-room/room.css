@@ -573,8 +573,15 @@ body {
 
 /* ── Mobile responsive layout ─────────────────────────────────────────────── */
 @media (max-width: 860px) {
-  /* Drum column only in sticky top — callcard is now a sibling below */
+  /* Pin the drum / machine to the top of the viewport so it doesn't
+     scroll away when the user scrolls down to see the call card or tickets.
+     The announcer is already position:fixed, so it follows automatically.
+     JS in updateStageScale() adds matching padding-top to .room-layout. */
   .room-top {
+    position: fixed;
+    top: 52px;
+    left: 0;
+    right: 0;
     flex-direction: column;
   }
 

@@ -282,6 +282,21 @@ function updateStageScale() {
       el.style.width  = annW + 'px'
       el.style.height = annH + 'px'
     }
+
+    // On mobile the machine is position:fixed, so .room-layout needs
+    // padding-top to push the scrollable content (callcard, tickets) below it.
+    // On desktop clear any leftover mobile padding.
+    const rLayout = document.querySelector('.room-layout')
+    if (rLayout) {
+      if (scale < 0.95) {
+        const rTop = document.querySelector('.room-top')
+        rLayout.style.paddingTop = rTop
+          ? Math.round(rTop.getBoundingClientRect().height) + 'px'
+          : ''
+      } else {
+        rLayout.style.paddingTop = ''
+      }
+    }
   })
 }
 
