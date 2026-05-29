@@ -36,10 +36,10 @@ const VIDEO_TIMING = {
   a: { idleSeek: 4.5, segStart: 2.4, segEnd: 4.4, bkThresh: 25, bkEdge: 55 },  // blue dress, blonde
   b: { idleSeek: 4.5, segStart: 2.4, segEnd: 4.4, bkThresh: 12, bkEdge: 35 },  // dark plaid skirt — lower threshold to preserve clothing
   c: { idleSeek: 4.5, segStart: 2.4, segEnd: 4.4, bkThresh:  8, bkEdge: 25 },  // dark hair/clothing — very conservative keying
-  d: { idleSeek: 4.5, segStart: 2.4, segEnd: 4.4, bkThresh: 10, bkEdge: 28 },  // blue dress, dark hair — lower threshold to preserve hair
-  e: { idleSeek: 4.5, segStart: 2.4, segEnd: 4.4, bkThresh: 10, bkEdge: 28 },  // white crop top, light blue skirt — lower threshold to preserve dark hair
+  d: { idleSeek: 1.2, segStart: 1.4, segEnd: 4.4, bkThresh: 10, bkEdge: 28 },  // blue dress, dark hair — frontal idle at 1.2s, raise starts 1.4s
+  e: { idleSeek: 4.8, segStart: 1.6, segEnd: 4.8, bkThresh: 10, bkEdge: 28 },  // white crop top, blue skirt — end-frame idle, raise from profile at 1.6s
   f: { idleSeek: 2.8, segStart: 2.8, segEnd: 4.8, bkThresh: 10, bkEdge: 28 },  // dark charcoal skirt, dark hair — tuned timing + conservative keying
-  g: { idleSeek: 4.5, segStart: 2.4, segEnd: 4.4, bkThresh:  4, bkEdge: 14 },  // dark black top — ultra-conservative keying
+  g: { idleSeek: 4.8, segStart: 2.0, segEnd: 4.8, bkThresh:  4, bkEdge: 14 },  // black satin outfit — end-frame idle, turn+raise starts 2.0s
 }
 
 // ── PNG announcers (types b / c / d) ──────────────────────────────────────
