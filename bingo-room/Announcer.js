@@ -39,7 +39,7 @@ const VIDEO_TIMING = {
   d: { idleSeek: 1.2, segStart: 1.4, segEnd: 4.4, bkThresh: 10, bkEdge: 28 },  // blue dress, dark hair — frontal idle at 1.2s, raise starts 1.4s
   e: { idleSeek: 4.8, segStart: 1.6, segEnd: 4.8, bkThresh: 10, bkEdge: 28 },  // white crop top, blue skirt — end-frame idle, raise from profile at 1.6s
   f: { idleSeek: 2.8, segStart: 2.8, segEnd: 4.8, bkThresh: 10, bkEdge: 28 },  // dark charcoal skirt, dark hair — tuned timing + conservative keying
-  g: { idleSeek: 0.4, segStart: 0.4, segEnd: 5.0, bkThresh: 25, bkEdge: 55 },  // gold champagne dress — frontal idle, full turn+raise+speak+lower
+  g: { idleSeek: 0.4, segStart: 2.8, segEnd: 5.0, bkThresh: 18, bkEdge: 40 },  // gold champagne dress — frontal idle 0.4s, skip turn, raise from 2.8s
 }
 
 // ── PNG announcers (types b / c / d) ──────────────────────────────────────
