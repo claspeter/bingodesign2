@@ -2,4 +2,23 @@ node_modules/
 dist/
 .DS_Store
 .env
+
+# Databases (live only — never commit)
 server/bingo.db
+bingo.db
+
+# Large media — video files live on the server, not in git
+*.mp4
+
+# IDE / tool directories
+.claude/
+.claire/
+
+# Server-side leftovers that should not be tracked
+*.bak
+user-portal/portal.v*.js
+user-portal/user-v*.js
+user-portal/user-v*.css
+user-portal/userPortal.js
+bingo-room/video-frames.html
+cartones.txt
