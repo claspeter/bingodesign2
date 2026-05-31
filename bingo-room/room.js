@@ -213,7 +213,7 @@ function _announcerNaturalPos() {
     b: { side: 'right', ox: 836, oy: 112, w: 200, h: 340, dx:   0 },  // raised 38px
     c: { side: 'right', ox: 836, oy: 150, w: 200, h: 340, dx:   0 },
     d: { side: 'right', ox: 836, oy: 150, w: 200, h: 340, dx: -20 },
-    e: { side: 'right', ox: 836, oy: 150, w: 200, h: 340, dx:   0, ms: 0.80 },
+    e: { side: 'right', ox: 836, oy: 110, w: 200, h: 340, dx:   0, ms: 0.80 },  // raised 40px
     f: { side: 'right', ox: 836, oy: 150, w: 200, h: 340, dx:   0, ms: 0.80 },
     g: { side: 'right', ox: 836, oy: 150, w: 200, h: 340, dx:   0, ms: 0.80 },
   }
