@@ -195,12 +195,8 @@
         <span class="room-card-draw" id="room-card-draw">—</span>
       </div>
 
-      <!-- no-ticket state -->
-      <div id="room-no-ticket" class="room-no-ticket hidden">
-        <div class="room-no-ticket-icon">🎟️</div>
-        <p>You don't have a ticket for the current draw.</p>
-        <a href="/user-portal" class="btn-room-buy">Buy Tickets →</a>
-      </div>
+      <!-- no-ticket state — content set dynamically by renderPlayerCard() -->
+      <div id="room-no-ticket" class="room-no-ticket hidden"></div>
 
       <!-- card grid injected by room.js -->
       <div id="room-card-grid"></div>

@@ -280,17 +280,32 @@ async function loadMyTickets() {
       groups[key].ticket_count++;
     });
 
-    const keys = Object.keys(groups);
+    // Only show active draws — filter out completed/voided ones.
+    // Future special draws (status='scheduled', even weeks away) are kept.
+    const allKeys  = Object.keys(groups);
+    const keys     = allKeys.filter(k => {
+      const s = groups[k].draw_status;
+      return s === 'running' || s === 'scheduled';
+    });
+
     if (!keys.length) {
       const who = currentUser?.name ? ` for <strong>${currentUser.name}</strong>` : '';
-      panel.innerHTML = `
-        <div class="my-tickets-empty">
-          <div class="mte-icon">🎟️</div>
-          <p>No tickets found${who}.</p>
-          <p style="font-size:13px;color:var(--muted);margin-bottom:20px">If you bought tickets on another device, they may appear here after a refresh.</p>
-          <button class="btn btn-primary" onclick="loadMyTickets()">↻ Refresh</button>
-          <button class="btn btn-outline" style="margin-top:10px" onclick="openSection('buy')">Buy Tickets →</button>
-        </div>`;
+      // Distinguish "all past" vs "never bought"
+      const hadTickets = allKeys.length > 0;
+      panel.innerHTML = hadTickets
+        ? `<div class="my-tickets-empty">
+             <div class="mte-icon">🎟️</div>
+             <p>No upcoming tickets${who}.</p>
+             <p style="font-size:13px;color:var(--muted);margin-bottom:20px">All your past draws have finished. Buy tickets for the next draw to play!</p>
+             <button class="btn btn-outline" onclick="openSection('buy')">Buy Tickets →</button>
+           </div>`
+        : `<div class="my-tickets-empty">
+             <div class="mte-icon">🎟️</div>
+             <p>No tickets found${who}.</p>
+             <p style="font-size:13px;color:var(--muted);margin-bottom:20px">If you bought tickets on another device, they may appear here after a refresh.</p>
+             <button class="btn btn-primary" onclick="loadMyTickets()">↻ Refresh</button>
+             <button class="btn btn-outline" style="margin-top:10px" onclick="openSection('buy')">Buy Tickets →</button>
+           </div>`;
       return;
     }
 
@@ -298,9 +313,7 @@ async function loadMyTickets() {
       const g = groups[key];
       const statusBadge = g.draw_status === 'running'
         ? `<span class="mt-badge mt-badge-live">🔴 Live</span>`
-        : g.draw_status === 'scheduled'
-        ? `<span class="mt-badge mt-badge-soon">⏰ Upcoming</span>`
-        : `<span class="mt-badge mt-badge-done">✓ Done</span>`;
+        : `<span class="mt-badge mt-badge-soon">⏰ Upcoming</span>`;
 
       return `
         <div class="mt-row">

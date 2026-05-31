@@ -41,6 +41,7 @@ let _allowedToWatch = false // true when user was in room before draw start; cle
 let _ceremonyActive = false // true while a bingo check ceremony is running; blocks waiting curtain
 let _firstBallCalled = false  // gates the walk-in zoom — fires once per draw
 let _announcerZoomed = false  // true while announcer is at zoom scale
+let _serverTicketCheckPending = false  // true while _refreshCardsFromServer is in flight
 
 const _token = localStorage.getItem('bp_token') || ''
 const _previewMode = new URLSearchParams(location.search).has('preview')
@@ -399,33 +400,43 @@ function loadCardsForDraw(drawId) {
     }
   } catch {}
   playerCards = null
-  // Nothing in localStorage — ticket may have been bought on another device.
-  // Try fetching from the server in the background and update the UI if found.
+  // Nothing in localStorage — ticket may have been bought on another device or
+  // localStorage was cleared. Fetch from server; show neutral "checking" state
+  // until the answer comes back so we never flash a false "no ticket" message.
+  _serverTicketCheckPending = true
   _refreshCardsFromServer(drawId)
 }
 
 async function _refreshCardsFromServer(drawId) {
+  // Helper: clear pending flag and re-render if we're still on the same draw
+  const _done = () => {
+    if (String(_currentDrawId) !== String(drawId)) return
+    _serverTicketCheckPending = false
+    renderPlayerCard()
+  }
   try {
     const headers = _token ? { Authorization: 'Bearer ' + _token } : {}
     const res = await fetch('/api/user-portal/tickets', { headers })
-    if (!res.ok) return
+    if (!res.ok) { _done(); return }
     const tickets = await res.json()
     // Filter tickets for this specific draw
     const drawTickets = tickets.filter(t => String(t.draw_id) === String(drawId))
-    if (!drawTickets.length) return
+    if (!drawTickets.length) { _done(); return }
     // Build flat card list — preset tickets store card objects with row1/row2/row3
     const allCards = []
     let drawTitle = ''
     for (const t of drawTickets) {
       try {
-        const parsed = JSON.parse(t.numbers)
+        const raw = t.numbers
+        // numbers may arrive as a string (DB column) or already-parsed object (some API paths)
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
         if (Array.isArray(parsed) && parsed.length && parsed[0]?.row1) {
           allCards.push(...parsed)
         }
       } catch {}
       if (!drawTitle && t.draw_title) drawTitle = t.draw_title
     }
-    if (!allCards.length) return
+    if (!allCards.length) { _done(); return }
     // Guard against race: ensure we're still on the same draw
     if (String(_currentDrawId) !== String(drawId)) return
     const data = { cards: allCards, drawTitle }
@@ -436,6 +447,7 @@ async function _refreshCardsFromServer(drawId) {
       localStorage.setItem('bingoRoomTickets', JSON.stringify(store))
     } catch {}
     playerCards = data
+    _serverTicketCheckPending = false
     renderPlayerCard()
     refreshCardMarks()
 
@@ -446,11 +458,22 @@ async function _refreshCardsFromServer(drawId) {
     if (isBlocked && calledSet.size > 0) {
       _enterMidDraw(calledSet.size)
     }
-  } catch {}
+  } catch { _done() }
 }
 
 function renderPlayerCard() {
   if (!playerCards || !playerCards.cards?.length) {
+    if (_serverTicketCheckPending) {
+      // Server check still in flight — show neutral state, not "no ticket"
+      noTicketEl.innerHTML =
+        '<div class="room-no-ticket-icon">🎟️</div>' +
+        '<p style="color:var(--muted,#aaa);font-size:14px">Looking for your tickets…</p>'
+    } else {
+      noTicketEl.innerHTML =
+        '<div class="room-no-ticket-icon">🎟️</div>' +
+        '<p>You don\'t have a ticket for the current draw.</p>' +
+        '<a href="/user-portal" class="btn-room-buy">Buy Tickets →</a>'
+    }
     noTicketEl.classList.remove('hidden')
     cardGridEl.innerHTML = ''
     return
